@@ -59,7 +59,6 @@ melsm_latent <- function(formula, group, data, ...) {
 .parse_formula <- function(formulaList, group, data) {
     # TODO: Allow exogenous predictors; endogenous outcomes.
     # TODO: Allow 2-level predictive formulas to separate out L1/L2 (random/fixed), or just random/fixed.
-    # TODO: Implement method for detecting whether L2-only variables are provided.
     if(!is.list(formulaList)) {
         forms <- list(formulaList)
     } else {
