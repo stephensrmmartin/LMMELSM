@@ -13,14 +13,25 @@
 ##' @return melsm_latent object.
 ##' @author Stephen R. Martin
 ##' @import rstan
+##' @importFrom parallel detectCores
 melsm_latent <- function(formula, group, data, ...) {
     # TODO: Add default sampling handling
     # TODO: For a package, make sure to use stanmodels list instead.
+    # Set defaults
+    dots <- list(...)
+    stan_args <- list()
+    stan_args$control <- dots$control %IfNull% list(adapt_delta = .95)
+    stan_args$control$adapt_delta <- stan_args$control$adapt_delta %IfNull% .95
+    stan_args$cores <- dots$cores %IfNull% detectCores()
+    stan_args$chains <- dots$chains %IfNull% 4
+    stan_args$iter <- dots$iter %IfNull% 2000
+    ## Remove from dots the things that are specified here
+    dots[names(dots) %in% names(stan_args)] <- NULL
 
     d <- .parse_formula(formula, group = substitute(group), data)
 
-    sm <- stan_model("../Stan/melsm_2l_mi.stan")
-    ## sm <- stan_model("../Stan/melsm_2l_mi_glm.stan")
+    stan_args$model <- stanmodels$melsm2MIGLM
+
     pars <- c("nu",
               "lambda",
               "sigma",
@@ -30,13 +41,10 @@ melsm_latent <- function(formula, group, data, ...) {
               "sigma_mean_logsd",
               "Omega_eta",
               "Omega_mean_logsd")
-    sOut <- sampling(sm,
-                    data = d$stan_data,
-                    cores = 4,
-                    iter = 1000,
-                    pars = pars,
-                    control = list(adapt_delta = .95)
-                    )
+    stan_args$pars <- pars
+
+    sOut <- do.call(sampling, c(stan_args, dots))
+
     return(sOut)
 
 }
