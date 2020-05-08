@@ -74,6 +74,10 @@ melsm_latent <- function(formula, group, data, ...) {
         }
     }
 
+    # Predictor formulas
+    ## Which formulas correspond to location and scale
+    which_loc_sca <- .which_location_scale(forms)
+
     # Get LHS and RHS terms
     fterms <- .get_formula_names(forms, formula = TRUE)
 
