@@ -143,25 +143,41 @@ melsm_latent <- function(formula, group, data, ...) {
 ##' @return List of lists.
 ##' @author Stephen R. Martin
 .get_formula_names <- function(flist, formula = TRUE) {
-    lhs_names <- lapply(flist, function(f){
-       all.vars(f)[1]
-    })
-    rhs_names <- lapply(flist, function(f) {
-        if(formula) {
-            attr(terms(f), "term.labels")
-        } else {
-            all.vars(f)[-1]
-        }
-    })
+    lhs_names <- lapply(flist, .get_LHS)
+    rhs_names <- lapply(flist, .get_RHS, terms = formula)
+
     out <- list(factor = lhs_names, indicator = rhs_names)
 
     return(out)
+}
+
+##' @title Get LHS variable as string.
+##' @param formula Formula.
+##' @return String.
+##' @author Stephen R. Martin
+##' @keywords internal
+.get_LHS <- function(formula) {
+    lhs_name <- all.vars(formula)[1]
+
+    return(lhs_name)
+}
+##' @title Get RHS terms or variables.
+##' @param formula Formula.
+##' @param terms Logical (Default: TRUE). Whether to return the terms (TRUE) or the variables (FALSE). E.g., "I(x^2)" vs "x"
+##' @return Character vector.
+##' @author Stephen R. Martin
+##' @keywords internal
+.get_RHS <- function(formula, terms = TRUE) {
+    rhs_name <- ifelse(terms, attr(terms(formula), "term.labels"), all.vars(formula)[-1])
+
+    return(rhs_name)
 }
 
 ##' @title Combines multiple formulas' RHS into one.
 ##' @param flist 
 ##' @return RHS formula.
 ##' @author Stephen R. Martin
+##' @keywords internal
 .combine_RHS <- function(flist) {
     fnames <- .get_formula_names(flist, formula = TRUE)
     RHS <- do.call(c, fnames$indicator)
