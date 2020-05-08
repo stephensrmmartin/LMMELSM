@@ -213,7 +213,7 @@ melsm_latent <- function(formula, group, data, ...) {
 
 ##' @title Check for location-scale formulas
 ##' @param flist Formula list.
-##' @return Numeric vector; which formulas in flist correspond to location, scale.
+##' @return Numeric vector (length 2); which formulas in flist correspond to location, scale.
 ##' @author Stephen R. Martin
 ##' @keywords internal
 .which_location_scale <- function(flist) {
@@ -232,3 +232,4 @@ melsm_latent <- function(formula, group, data, ...) {
     }
     return(loc_scale)
 }
+
