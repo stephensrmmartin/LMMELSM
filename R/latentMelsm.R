@@ -237,3 +237,22 @@ melsm_latent <- function(formula, group, data, ...) {
     return(loc_scale)
 }
 
+##' Detects whether the predictors are level-2 only.
+##' E.g., whether location and scale are covariates are the same across all n_k observations of each K.
+##' This is important for efficiency reasons.
+##' If the covariates are invariant across repeated observations of the given group k, for all K, then we can compute predicted values once, and broadcast the prediction, rather than compute the prediction for every single row.
+##' Specifically, it detects if all x == x[1], where x is a group's data, for each column in mf.
+##' @title Detect whether the predictors are L2-only
+##' @param mf Data frame for predictors. Should contain no missings.
+##' @param group Grouping variable for the model frame.
+##' @return Logical. TRUE if the covariates appear to be level-2 only.
+##' @author Stephen Martin
+.detect_L2_only <- function(mf, group) {
+    col_same <- sapply(mf, function(col) {
+        group_same <- tapply(col, group, function(x) {
+            all(x == x[1])
+        })
+        all(group_same)
+    })
+    return(all(col_same))
+}
