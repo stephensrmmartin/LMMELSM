@@ -68,6 +68,18 @@ melsm_latent <- function(formula, group, data, ...) {
     return(sOut)
 
 }
+
+##' @title Convert spec to stan data.
+##' @param formula Formula. Should be either location ~ ... or scale ~ ... .
+##' @param group Raw group name.
+##' @param data Data frame.
+##' @return List.
+##' @author Stephen R. Martin
+.parse_prediction_formula <- function(formula, group, data) {
+    # TODO: Implement this
+    
+}
+
 ##' @title Convert spec to stan data.
 ##' @param formulaList Formula or list of formulas.
 ##' @param group Group symbol.
