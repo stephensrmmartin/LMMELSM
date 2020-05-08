@@ -55,6 +55,7 @@ melsm_latent <- function(formula, group, data, ...) {
 ##' @return List.
 ##' @author Stephen R. Martin
 ##' @import Formula
+##' @keywords internal
 .parse_formula <- function(formulaList, group, data) {
     # TODO: Allow exogenous predictors; endogenous outcomes.
     # TODO: Allow 2-level predictive formulas to separate out L1/L2 (random/fixed), or just random/fixed.
@@ -197,6 +198,7 @@ melsm_latent <- function(formula, group, data, ...) {
 ##' @param flist Formula list.
 ##' @return List with J_f (vector; Number of Indicators for each factor) and F_ind (matrix; each row contains the columns in mm.inds for the row-th factor).
 ##' @author Stephen R. Martin
+##' @keywords internal
 .get_indicator_spec <- function(mm.inds, flist) {
     fnames <- .get_formula_names(flist, formula = TRUE)
     mmnames <- colnames(mm.inds)
@@ -246,7 +248,8 @@ melsm_latent <- function(formula, group, data, ...) {
 ##' @param mf Data frame for predictors. Should contain no missings.
 ##' @param group Grouping variable for the model frame.
 ##' @return Logical. TRUE if the covariates appear to be level-2 only.
-##' @author Stephen Martin
+##' @author Stephen R. Martin
+##' @keywords internal
 .detect_L2_only <- function(mf, group) {
     col_same <- sapply(mf, function(col) {
         group_same <- tapply(col, group, function(x) {
