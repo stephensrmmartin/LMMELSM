@@ -207,3 +207,25 @@ melsm_latent <- function(formula, group, data, ...) {
     out <- list(J_f = J_f, F_ind = F_ind)
     return(out)
 }
+
+##' @title Check for location-scale formulas
+##' @param flist Formula list.
+##' @return Numeric vector; which formulas in flist correspond to location, scale.
+##' @author Stephen R. Martin
+##' @keywords internal
+.which_location_scale <- function(flist) {
+    lhs_names <- lapply(flist, .get_LHS)
+    loc_scale <- match(c("location", "scale"), lhs_names)
+    names(loc_scale) <- c("location", "scale")
+
+    # Check whether multiple location/scales exist
+    which_lhs_match_location <- lhs_names %in% c("location")
+    which_lhs_match_scale <- lhs_names %in% c("scale")
+    if(sum(which_lhs_match_location) > 1) {
+        stop("Multiple formulas for 'location' provided.")
+    }
+    if(sum(which_lhs_match_scale) > 1) {
+        stop("Multiple formulas for 'scale' provided.")
+    }
+    return(loc_scale)
+}
