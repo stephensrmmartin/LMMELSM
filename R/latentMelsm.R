@@ -5,6 +5,26 @@
 ##' Currently assumes measurement invariance (i.e., the measurement model params are equivalent across groups).
 ##' Excludes rows with missing data.
 ##' The Stan model currently uses the unit-variance identification.
+##'
+##' Formulas should be of the form:
+##'
+##' \code{latentName ~ indicator1 + indicator2 + indicator3},
+##' where \code{latentName} is the name of the latent variable.
+##' The right-hand side (RHS) should contain the variables in \code{data} onto which the factor loads.
+##' In the simplest case, only one formula is required. This defines a single-factor model.
+##' If multiple latent factors are desired, a list of formulas can be provided.
+##'
+##' To predict the latent locations and scales, include the respective formulas in the list of formulas.
+##' For example:
+##' 
+##' \code{location ~ x1 + x2}
+##' \code{scale ~ x1 + x2}
+##'
+##' The covariates do not need to be the same across the location and scale.
+##' The specified covariates will be used to predict the location and scale of \emph{all} latent factors via multivariate regression.
+##'
+##' \emph{Note}: Because \code{location} and \code{scale} represent special formulas, latent factors cannot be called location or scale.
+##' It is assumed that any formula with \code{location} or \code{scale} on the left-hand side (LHS) is a predictive formula, not a latent variable specification.
 ##' @title Fit two-level latent MELSM.
 ##' @param formula Formula or list of formulas. LHS of each should be factor name, RHS should be indicators.
 ##' @param group Raw grouping variable name (not character).
