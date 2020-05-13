@@ -143,19 +143,29 @@ melsm_latent <- function(formula, group, data, ...) {
     # Group object
     group_spec <- list(name = group_name,
                        data = mf[, group_name],
-                       numeric = as.numeric(as.factor(mf[, group_name])))
-    out$meta$group <- group
-    out$stan_data$group <- group$numeric
+                       numeric = as.numeric(as.factor(mf[, group_name])),
+                       K = length(unique(numeric)))
+    out$meta$group_spec <- group_spec
+    out$stan_data$group <- group_spec$numeric
+    out$stan_data$K <- group_spec$K
 
 
     # Get indicator matrix
     indicator_spec <- .parse_formula.indicators(mlist, mf)
-    out$stan_data[c("J_f", "F_ind")] <- indicator_spec$ind_spec[c("J_f", "F_ind")]
-    out$stan_data$y <- indicator_spec$y
+    mlistNames <- .get_formula_names(mlist, formula = TRUE)
+    out$meta$indicator_spec <- indicator_spec
+    out$meta$indicator_spec$fname <- mlistNames$factor
+    out$meta$indicator_spec$iname <- mlistNames$indicator
+    out$stan_data <- c(out$stan_data, indicator_spec)
 
     # Predictor matrices
     pred_spec <- .parse_formula.predictor(plist, mf, group_spec$data)
+    plistNames <- .get_formula_names()
+    out$meta$pred_spec <- pred_spec
+    out$meta$pred_spec$pnames <- 
     out$stan_data <- c(out$stan_data, pred_spec)
+
+    # Meta-data
 }
 
 .parse_formula.indicators <- function(mlist, mf) {
@@ -163,7 +173,13 @@ melsm_latent <- function(formula, group, data, ...) {
     mm <- model.matrix(mlist_RHS, mf)[, -1] # No intercept
     ind_spec <- .get_indicator_spec(mm, mlist)
 
-    out <- nlist(y = mm, ind_spec)
+    out <- nlist(y = mm,
+                 J_f = ind_spec$J_f,
+                 F_ind = ind_spec$F_ind,
+                 J = ncol(mm),
+                 F = length(mlist),
+                 N = nrow(mm)
+                 )
     return(out)
 }
 
