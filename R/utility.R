@@ -11,3 +11,22 @@
         return(object)
     }
 }
+
+##' @title Creates named list.
+##' @param ... Objects for list.
+##' @return Named List.
+##' @author Stephen R. Martin
+##' @keywords internal
+nlist <- function(...) {
+    mc <- match.call()
+    out <- list(...)
+
+    not_named <- is.null(names(out))
+    is_named <- (!not_named) & nzchar(names(out))
+
+    args <- as.character(mc)[-1] # Not the fn name.
+
+    names(out)[!is_named] <- args[!is_named]
+
+    return(out)
+}
