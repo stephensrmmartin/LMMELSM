@@ -254,8 +254,8 @@ melsm_latent <- function(formula, group, data, ...) {
 ##' @return Numeric vector (length 2); which formulas in flist correspond to location, scale.
 ##' @author Stephen R. Martin
 ##' @keywords internal
-.which_location_scale <- function(flist) {
-    lhs_names <- lapply(flist, .get_LHS)
+.which_location_scale <- function(flist, reduce = TRUE) {
+    lhs_names <- tolower(lapply(flist, .get_LHS))
     loc_scale <- match(c("location", "scale"), lhs_names)
     names(loc_scale) <- c("location", "scale")
 
@@ -268,6 +268,11 @@ melsm_latent <- function(formula, group, data, ...) {
     if(sum(which_lhs_match_scale) > 1) {
         stop("Multiple formulas for 'scale' provided.")
     }
+
+    if(reduce) {
+        loc_scale <- loc_scale[!is.na(loc_scale)]
+    }
+
     return(loc_scale)
 }
 
