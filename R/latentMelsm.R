@@ -88,7 +88,7 @@ melsm_latent <- function(formula, group, data, ...) {
 ##' @author Stephen R. Martin
 ##' @import Formula
 ##' @keywords internal
-.parse_formula2 <- function(formulaList, group, data) {
+.parse_formula <- function(formulaList, group, data) {
     # Make it a list of formulas
     if(!is.list(formulaList)) {
         flist <- list(formulaList)
@@ -156,16 +156,20 @@ melsm_latent <- function(formula, group, data, ...) {
     out$meta$indicator_spec <- indicator_spec
     out$meta$indicator_spec$fname <- mlistNames$factor
     out$meta$indicator_spec$iname <- mlistNames$indicator
+    out$meta$indicator_spec$mname <- colnames(indicator_spec$y)
     out$stan_data <- c(out$stan_data, indicator_spec)
 
     # Predictor matrices
     pred_spec <- .parse_formula.predictor(plist, mf, group_spec$data)
     plistNames <- .get_formula_names(plist)
     out$meta$pred_spec <- pred_spec
-    out$meta$pred_spec$pnames <- plistNames$indicator
+    out$meta$pred_spec$pname <- plistNames$indicator
     out$stan_data <- c(out$stan_data, pred_spec)
 
-    # Meta-data
+    # Misc
+    out$meta$formula <- flist
+
+    return(out)
 }
 
 .parse_formula.indicators <- function(mlist, mf) {
@@ -228,103 +232,6 @@ melsm_latent <- function(formula, group, data, ...) {
                  x_sca
                  )
     return(out)
-}
-
-##' @title Convert spec to stan data.
-##' @param formulaList Formula or list of formulas.
-##' @param group Group symbol.
-##' @param data Data frame.
-##' @return List.
-##' @author Stephen R. Martin
-##' @import Formula
-##' @keywords internal
-.parse_formula <- function(formulaList, group, data) {
-    # TODO: Allow exogenous predictors; endogenous outcomes.
-    # TODO: Allow 2-level predictive formulas to separate out L1/L2 (random/fixed), or just random/fixed.
-    # TODO: Redo this function from the ground-up
-    if(!is.list(formulaList)) {
-        forms <- list(formulaList)
-    } else {
-        forms <- formulaList
-    }
-
-    forms <- lapply(forms, as.Formula)
-
-    # Check for LHS
-    for(f in seq_len(length(forms))) {
-        if(length(forms[[f]])[1] != 1) {
-            stop("Factor name should be provided on LHS of formula.")
-        }
-    }
-
-    # Predictor formulas
-    ## Which formulas correspond to location and scale
-    which_loc_sca <- .which_location_scale(forms)
-
-    # Get LHS and RHS terms
-    fterms <- .get_formula_names(forms, formula = TRUE)
-
-    # Make model.frame
-    RHS.inds <- .combine_RHS(forms)
-    mf.inds <- model.frame(RHS.inds, data = data, na.action = na.pass)
-
-    # Grouping data
-    group_name <- deparse(group)
-    group_orig <- data[[group_name]]
-
-
-    # Remove missings
-    which_na <- lapply(cbind(mf.inds, data[[group_name]]), function(x){
-        which(is.na(x))
-    })
-    which_na_vec <- unique(do.call(c, which_na))
-
-    if(length(which_na_vec) >= 1) {
-        warning("Removing ", length(which_na_vec), "rows with NA values.")
-        mf.inds <- mf.inds[-which_na_vec,]
-        group_orig <- group_orig[-which_na_vec]
-    }
-
-    group_numeric <- as.numeric(as.factor(group_orig))
-    group_K <- length(unique(group_numeric))
-    group_data <- list(name = group_name, group = group_orig, group_code = group_numeric, group_K = group_K)
-
-    # Make model.matrix
-    mm.inds <- model.matrix(RHS.inds, data = mf.inds)[, -1] ## No intercept
-
-    # Get indicator spec
-    ind.spec <- .get_indicator_spec(mm.inds, forms)
-
-    # Meta-data
-    N <- nrow(mf.inds)
-    J <- ncol(mm.inds)
-    `F` <- length(fterms$factor)
-
-    # Package up
-    mf <- mf.inds
-    mf[[group_name]] <- group_orig
-
-    stan_data <- list(N = N,
-                      J = J,
-                      `F` = `F`,
-                      K = group_K,
-                      group = group_numeric,
-                      J_f = ind.spec$J_f,
-                      F_ind = ind.spec$F_ind,
-                      x = mm.inds)
-    out <- list(meta = list(N = N,
-                            J = J,
-                            `F` = `F`,
-                            K = group_K,
-                            group_data = group_data,
-                            formula = forms,
-                            fnames = fterms$factor,
-                            inames = fterms$indicator),
-                data = mf,
-                stan_data = stan_data)
-
-    return(out)
-
 }
 
 ##' @title Get names in formula.
