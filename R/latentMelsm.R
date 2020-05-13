@@ -160,9 +160,9 @@ melsm_latent <- function(formula, group, data, ...) {
 
     # Predictor matrices
     pred_spec <- .parse_formula.predictor(plist, mf, group_spec$data)
-    plistNames <- .get_formula_names()
+    plistNames <- .get_formula_names(plist)
     out$meta$pred_spec <- pred_spec
-    out$meta$pred_spec$pnames <- 
+    out$meta$pred_spec$pnames <- plistNames$indicator
     out$stan_data <- c(out$stan_data, pred_spec)
 
     # Meta-data
