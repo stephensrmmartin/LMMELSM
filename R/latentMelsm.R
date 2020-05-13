@@ -184,8 +184,8 @@ melsm_latent <- function(formula, group, data, ...) {
 }
 
 .parse_formula.predictor <- function(plist, mf, group) {
-    plist$location <- plist$location %IfNull% Formula(location ~ 1)
-    plist$scale <- plist$scale %IfNull% Formula(scale ~ 1)
+    ## plist$location <- plist$location %IfNull% Formula(location ~ 1)
+    ## plist$scale <- plist$scale %IfNull% Formula(scale ~ 1)
     mf <- model.frame(.combine_RHS(plist), mf)
 
     x_loc <- model.matrix(plist$location, mf)[,-1]
