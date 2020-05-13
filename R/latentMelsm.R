@@ -101,14 +101,15 @@ melsm_latent <- function(formula, group, data, ...) {
 
     # Convert to Formula::Formula
     flist <- lapply(flist, as.Formula)
+    names(flist) <- sapply(flist, .get_LHS)
 
     # Separate location/scale formulas from measurement formulas.
     ## mlist: List of measurement fact formulas
     ## plist: List of predictive location/scale formulas
     ## flist: All formulas (good for model framing)
+    plist <- list(location = Formula(location ~ 1), scale = Formula(scale ~ 1))
     which_loc_sca <- .which_location_scale(flist, reduce = TRUE)
-    plist <- flist[which_loc_sca]
-    names(plist) <- sapply(plist, .get_LHS)
+    plist[names(which_loc_sca)] <- flist[which_loc_sca]
     mlist <- flist
     mlist[which_loc_sca] <- NULL
 
