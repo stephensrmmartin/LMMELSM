@@ -88,6 +88,131 @@ melsm_latent <- function(formula, group, data, ...) {
 ##' @author Stephen R. Martin
 ##' @import Formula
 ##' @keywords internal
+.parse_formula2 <- function(formulaList, group, data) {
+    # Make it a list of formulas
+    if(!is.list(formulaList)) {
+        flist <- list(formulaList)
+    } else {
+        flist <- formulaList
+    }
+
+    # Output structure
+    out <- list(meta = list(), stan_data = list())
+
+    # Convert to Formula::Formula
+    flist <- lapply(flist, as.Formula)
+
+    # Separate location/scale formulas from measurement formulas.
+    ## mlist: List of measurement fact formulas
+    ## plist: List of predictive location/scale formulas
+    ## flist: All formulas (good for model framing)
+    which_loc_sca <- .which_location_scale(flist, reduce = TRUE)
+    plist <- flist[which_loc_sca]
+    names(plist) <- sapply(plist, .get_LHS)
+    mlist <- flist
+    mlist[which_loc_sca] <- NULL
+
+    # Check for LHS names
+    for(f in seq_len(length(flist))) {
+        if(length(flist[[f]])[1] != 1) {
+            stop("Factor name should be provided on LHS of formula.")
+        }
+    }
+
+    # Get group spec
+    group <- substitute(group)
+    group_name <- deparse(group)
+
+    # Create model frame (All predictors, indicators, and the grouping variable)
+    flist_RHS <- .combine_RHS(flist)
+    mf <- model.frame(flist_RHS, data, na.action = na.pass)
+    mf[,group_name] = data[,group_name]
+
+    # Remove missings
+    removed_ind <- which(!complete.cases(mf)) 
+    removed_N <- length(removed_ind)
+    out$meta$missings = list(N = removed_N, ind = removed_ind)
+
+    mf <- mf[-removed_ind,]
+    if(removed_N >= 1) {
+        warning("Removing", removed_N, "incomplete cases.")
+    }
+    out$data = mf
+
+    # Group object
+    group <- list(name = group_name,
+                  data = mf[, group_name],
+                  numeric = as.numeric(as.factor(mf[, group_name])))
+    out$meta$group <- group
+    out$stan_data$group <- group$numeric
+
+
+    # Get indicator matrix
+    mlist_RHS <- .combine_RHS(mlist)
+    mm <- model.matrix(mlist_RHS, mf)[, -1] # No intercept
+    ind_spec <- .get_indicator_spec(mm, mlist)
+    out$stan_data[c("J_f", "F_ind")] <- ind_spec[c("J_f", "F_ind")]
+    out$stan_data$y <- mm
+
+    # Predictor matrices
+    pred_spec <- .parse_formula.predictor(plist, mf, group$data)
+}
+
+.parse_formula.predictor <- function(plist, mf, group) {
+    plist$location <- plist$location %IfNull% Formula(location ~ 1)
+    plist$scale <- plist$scale %IfNull% Formula(scale ~ 1)
+    mf <- model.frame(.combine_RHS(plist), mf)
+
+    x_loc <- model.matrix(plist$location, mf)[,-1]
+    x_sca <- model.matrix(plist$scale, mf)[,-1]
+    P <- ncol(x_loc)
+    Q <- ncol(x_sca)
+
+    if(length(plist$location)[2] == 2) {
+        P_random_RHS <- .get_RHS(formula(plist$location, rhs = 2))
+        P_random <- length(P_random_RHS)
+        P_random_ind <- match(P_random_RHS, colnames(x_loc))
+    } else {
+        P_random <- 0
+        P_random_ind <- integer()
+    }
+
+    if(length(plist$scale)[2] == 2) {
+        Q_random_RHS <- .get_RHS(formula(plist$scale, rhs = 2))
+        Q_random <- length(Q_random_RHS)
+        Q_random_ind <- match(Q_random_RHS, colnames(x_sca))
+    } else {
+        Q_random <- 0
+        Q_random_ind <- integer()
+    }
+
+    # Specify efficiency options
+    intercept_only <- P == 0 & Q == 0
+    L2_pred_only <- .detect_L2_only(mf, group)
+
+
+    out <- nlist(intercept_only,
+                 L2_pred_only,
+                 P,
+                 Q,
+                 P_random,
+                 Q_random,
+                 P_random_ind,
+                 Q_random_ind,
+                 x_loc,
+                 x_sca
+                 )
+    return(out)
+}
+
+##' @title Convert spec to stan data.
+##' @param formulaList Formula or list of formulas.
+##' @param group Group symbol.
+##' @param data Data frame.
+##' @return List.
+##' @author Stephen R. Martin
+##' @import Formula
+##' @keywords internal
 .parse_formula <- function(formulaList, group, data) {
     # TODO: Allow exogenous predictors; endogenous outcomes.
     # TODO: Allow 2-level predictive formulas to separate out L1/L2 (random/fixed), or just random/fixed.
