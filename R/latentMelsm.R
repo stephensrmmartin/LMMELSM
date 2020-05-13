@@ -358,7 +358,11 @@ melsm_latent <- function(formula, group, data, ...) {
 ##' @author Stephen R. Martin
 ##' @keywords internal
 .get_RHS <- function(formula, terms = TRUE) {
-    rhs_name <- ifelse(terms, attr(terms(formula), "term.labels"), all.vars(formula)[-1])
+    if(terms) {
+        return(attr(terms(formula), "term.labels"))
+    } else {
+        return(all.vars(formula)[-1])
+    }
 
     return(rhs_name)
 }
