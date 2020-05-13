@@ -70,17 +70,6 @@ melsm_latent <- function(formula, group, data, ...) {
 }
 
 ##' @title Convert spec to stan data.
-##' @param formula Formula. Should be either location ~ ... or scale ~ ... .
-##' @param group Raw group name.
-##' @param data Data frame.
-##' @return List.
-##' @author Stephen R. Martin
-.parse_prediction_formula <- function(formula, group, data) {
-    # TODO: Implement this
-    
-}
-
-##' @title Convert spec to stan data.
 ##' @param formulaList Formula or list of formulas.
 ##' @param group Group symbol.
 ##' @param data Data frame.
@@ -172,6 +161,12 @@ melsm_latent <- function(formula, group, data, ...) {
     return(out)
 }
 
+##' @title Compute indicator data.
+##' @param mlist List of measurement formulas.
+##' @param mf Data frame with complete cases.
+##' @return Named List.
+##' @author Stephen R. Martin
+##' @keywords internal
 .parse_formula.indicators <- function(mlist, mf) {
     mlist_RHS <- .combine_RHS(mlist)
     mm <- model.matrix(mlist_RHS, mf)[, -1] # No intercept
@@ -187,6 +182,13 @@ melsm_latent <- function(formula, group, data, ...) {
     return(out)
 }
 
+##' @title Compute predictor data.
+##' @param plist List of prediction formulas.
+##' @param mf Data frame containing complete cases.
+##' @param group Grouping data.
+##' @return Named list.
+##' @author Stephen R. Martin
+##' @keywords internal
 .parse_formula.predictor <- function(plist, mf, group) {
     ## plist$location <- plist$location %IfNull% Formula(location ~ 1)
     ## plist$scale <- plist$scale %IfNull% Formula(scale ~ 1)
