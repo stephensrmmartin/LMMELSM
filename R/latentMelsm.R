@@ -51,6 +51,7 @@ melsm_latent <- function(formula, group, data, ...) {
     d <- .parse_formula(formula, group = substitute(group), data)
 
     stan_args$model <- stanmodels$lmmelsmPred
+    stan_args$data = d$stan_data
 
     pars <- c("nu",
               "lambda",
