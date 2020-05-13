@@ -220,8 +220,7 @@ melsm_latent <- function(formula, group, data, ...) {
     L2_pred_only <- .detect_L2_only(mf, group)
 
 
-    out <- nlist(intercept_only,
-                 L2_pred_only,
+    out <- nlist(L2_pred_only,
                  P,
                  Q,
                  P_random,
