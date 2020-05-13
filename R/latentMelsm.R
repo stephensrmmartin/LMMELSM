@@ -140,22 +140,30 @@ melsm_latent <- function(formula, group, data, ...) {
     out$data = mf
 
     # Group object
-    group <- list(name = group_name,
-                  data = mf[, group_name],
-                  numeric = as.numeric(as.factor(mf[, group_name])))
+    group_spec <- list(name = group_name,
+                       data = mf[, group_name],
+                       numeric = as.numeric(as.factor(mf[, group_name])))
     out$meta$group <- group
     out$stan_data$group <- group$numeric
 
 
     # Get indicator matrix
+    indicator_spec <- .parse_formula.indicators(mlist, mf)
+    out$stan_data[c("J_f", "F_ind")] <- indicator_spec$ind_spec[c("J_f", "F_ind")]
+    out$stan_data$y <- indicator_spec$y
+
+    # Predictor matrices
+    pred_spec <- .parse_formula.predictor(plist, mf, group_spec$data)
+    out$stan_data <- c(out$stan_data, pred_spec)
+}
+
+.parse_formula.indicators <- function(mlist, mf) {
     mlist_RHS <- .combine_RHS(mlist)
     mm <- model.matrix(mlist_RHS, mf)[, -1] # No intercept
     ind_spec <- .get_indicator_spec(mm, mlist)
-    out$stan_data[c("J_f", "F_ind")] <- ind_spec[c("J_f", "F_ind")]
-    out$stan_data$y <- mm
 
-    # Predictor matrices
-    pred_spec <- .parse_formula.predictor(plist, mf, group$data)
+    out <- nlist(y = mm, ind_spec)
+    return(out)
 }
 
 .parse_formula.predictor <- function(plist, mf, group) {
@@ -187,7 +195,7 @@ melsm_latent <- function(formula, group, data, ...) {
     }
 
     # Specify efficiency options
-    intercept_only <- P == 0 & Q == 0
+    ## intercept_only <- P == 0 & Q == 0
     L2_pred_only <- .detect_L2_only(mf, group)
 
 
