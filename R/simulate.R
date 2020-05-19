@@ -1,4 +1,4 @@
-##' @title Simulate univariate fixed effects predictive LM-MELSM
+##' @title Simulate univariate fixed effects predictive LM-MELSM data.
 ##' @param n Integer. Number of observations per group.
 ##' @param K Integer. Number of groups.
 ##' @param lambda Vector. Loadings.
@@ -45,6 +45,20 @@ simulate.uni.fe <- function(n, K, lambda, resid, nu, mu_beta = numeric(), logsd_
     # Measurement model
     Y <- matrix(nu, nrow = N, ncol = J, byrow = TRUE) + eta %*% t(lambda) + matrix(rnorm(N*J, 0, resid), nrow = N, ncol = J, byrow = TRUE)
 
+    # Build data frame
+    df <- as.data.frame(Y)
+    colnames(df) <- paste0("obs_",1:J)
+    df$subject <- group
+
+    if(P > 0) {
+        colnames(X_loc) <- paste0("loc_", 1:P)
+        df <- cbind(df, X_loc)
+    }
+    if(Q > 0) {
+        colnames(X_sca) <- paste0("sca_", 1:Q)
+        df <- cbind(df, X_sca)
+    }
+
     out <- list(params = nlist(
                     P, Q, F, J, N, n, K,
                     lambda, resid, nu,
@@ -64,7 +78,8 @@ simulate.uni.fe <- function(n, K, lambda, resid, nu, mu_beta = numeric(), logsd_
                     group,
                     J_f = array(1:J, dim = c(J, 1)),
                     F_ind = matrix(1:J, nrow=1)
-                ))
+                ),
+                df = df)
 
     return(out)
 }
