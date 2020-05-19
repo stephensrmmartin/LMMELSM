@@ -71,24 +71,23 @@ simulate.uni.fe <- function(n,
     }
 
     out <- list(params = nlist(
-                    P, Q, F, J, N, n, K,
+                    N, J, F, K, P, Q, n,
                     lambda, resid, nu,
                     mu_beta, logsd_beta,
                     mu_logsd_cor, mu_logsd_sigma,
                     L2_pred_only,
-                    X_loc, X_sca,
                     eta, mu_logsd_re
                 ),
                 data = nlist(
-                    X_loc, X_sca,
                     N, J, F, K, P, Q,
                     P_random = 0, Q_random = 0,
                     x_loc = X_loc,
                     x_sca = X_sca,
                     y = Y,
                     group,
-                    J_f = array(1:J, dim = c(J, 1)),
-                    F_ind = matrix(1:J, nrow=1)
+                    J_f = array(J, dim = c(1)),
+                    F_ind = matrix(1:J, nrow=1),
+                    L2_pred_only
                 ),
                 df = df)
 
