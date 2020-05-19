@@ -46,7 +46,7 @@ simulate.uni.fe <- function(n,
     if(Q > 0) eta_logsd <- eta_logsd + X_sca %*% logsd_beta
 
     # Random intercepts (with no predictor, mean latents for each group)
-    mu_logsd_re <- mvrnorm(K, Sigma = diag(mu_logsd_sigma) %*% mu_logsd_cor %*% diag(mu_logsd_sigma))
+    mu_logsd_re <- mvrnorm(K, mu = rep(0, 2), Sigma = diag(mu_logsd_sigma) %*% mu_logsd_cor %*% diag(mu_logsd_sigma))
     eta_mu <- eta_mu + mu_logsd_re[group, 1]
     eta_logsd <- eta_logsd + mu_logsd_re[group, 2]
 
@@ -106,12 +106,10 @@ simulate.uni.fe <- function(n,
 ##' @importFrom MASS mvrnorm
 .simulate.X <- function(n, K, P, L2_pred_only) {
     if(L2_pred_only) {
-        X_L2 <- mvrnorm(K, Sigma = diag(1, P, P))
-        X <- t(apply(X_L2, 1, function(x){
-            rep(x, n)
-        }))
+        X_L2 <- mvrnorm(K, mu = rep(0, P), Sigma = diag(1, P, P))
+        X <- X_L2[rep(1:K, each = n),, drop = FALSE]
     } else {
-        X <- mvrnorm(n * K, Sigma = diag(1, P, P))
+        X <- mvrnorm(n * K, mu = rep(0, P), Sigma = diag(1, P, P))
     }
     return(X)
 }
