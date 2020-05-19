@@ -15,7 +15,18 @@
 ##' @author Stephen R. Martin
 ##' @keywords internal
 ##' @importFrom MASS mvrnorm
-simulate.uni.fe <- function(n, K, lambda, resid, nu, mu_beta = numeric(), logsd_beta = numeric(), mu_logsd_cor = diag(1, 2, 2), mu_logsd_sigma = rep(1, 2), L2_pred_only = FALSE, X_loc = NULL, X_sca = NULL) {
+simulate.uni.fe <- function(n,
+	K,
+	lambda,
+	resid,
+	nu,
+	mu_beta = numeric(),
+	logsd_beta = numeric(),
+	mu_logsd_cor = diag(1, 2, 2),
+	mu_logsd_sigma = rep(1,	2),
+	L2_pred_only = FALSE,
+	X_loc = NULL,
+	X_sca = NULL) {
     P <- length(mu_beta)
     Q <- length(logsd_beta)
     F <- 1
@@ -83,6 +94,7 @@ simulate.uni.fe <- function(n, K, lambda, resid, nu, mu_beta = numeric(), logsd_
 
     return(out)
 }
+
 ##' @title Simulate covariates without correlation.
 ##' @param n Number of observations per k unit.
 ##' @param K Number of k units (Level 2 units).
