@@ -131,8 +131,8 @@ melsm_latent <- function(formula, group, data, ...) {
     removed_N <- length(removed_ind)
     out$meta$missings = list(N = removed_N, ind = removed_ind)
 
-    mf <- mf[-removed_ind,]
     if(removed_N >= 1) {
+        mf <- mf[-removed_ind,]
         warning("Removing", removed_N, "incomplete cases.")
     }
     out$data = mf
