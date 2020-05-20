@@ -174,7 +174,7 @@ model {
   mu_logsd_random_L ~ lkj_corr_cholesky(1);
   mu_logsd_random_sigma ~ std_normal();
 
-  if(prior_only != 0){
+  if(!prior_only){
     for(j in 1:J) {
       y[,j] ~ normal_id_glm(eta, nu[j], lambda[,j], sigma[j]);
     }
