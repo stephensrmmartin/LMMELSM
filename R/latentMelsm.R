@@ -46,21 +46,27 @@ melsm_latent <- function(formula, group, data, ...) {
     stan_args$cores <- dots$cores %IfNull% detectCores()
     stan_args$chains <- dots$chains %IfNull% 4
     stan_args$iter <- dots$iter %IfNull% 2000
+    stan_args$prior_only <- dots$prior_only %IfNull% FALSE
     ## Remove from dots the things that are specified here
     dots[names(dots) %in% names(stan_args)] <- NULL
 
     d <- .parse_formula(formula, group = substitute(group), data)
 
-    stan_args$model <- stanmodels$lmmelsmPred
-    stan_args$data = d$stan_data
+    stan_args$object <- stanmodels$lmmelsmPred
+    stan_args$data <- d$stan_data
+    stan_args$data$prior_only <- stan_args$prior_only
+    stan_args$prior_only <- NULL
 
     pars <- c("nu",
               "lambda",
               "sigma",
-              "eta_mean",
-              "eta_sd",
               "eta",
-              "sigma_mean_logsd",
+              "eta_logsd",
+              "mu_beta",
+              "logsd_beta",
+              "mu_random",
+              "logsd_random",
+              "mu_logsd_random_sigma",
               "Omega_eta",
               "Omega_mean_logsd")
     stan_args$pars <- pars
