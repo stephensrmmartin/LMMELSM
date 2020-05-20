@@ -141,7 +141,7 @@ melsm_latent <- function(formula, group, data, ...) {
     group_spec <- list(name = group_name,
                        data = mf[, group_name],
                        numeric = as.numeric(as.factor(mf[, group_name])),
-                       K = length(unique(numeric)))
+                       K = length(unique(mf[, group_name])))
     out$meta$group_spec <- group_spec
     out$stan_data$group <- group_spec$numeric
     out$stan_data$K <- group_spec$K
