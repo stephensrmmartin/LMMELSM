@@ -275,9 +275,17 @@ melsm_latent <- function(formula, group, data, ...) {
 ##' @keywords internal
 .get_RHS <- function(formula, terms = TRUE) {
     if(terms) {
-        return(attr(terms(formula), "term.labels"))
+        out <- attr(terms(formula), "term.labels")
+        if(length(out) == 0) {
+            out <- "1" # Edge case: If intercept-only, then return 1.
+        }
+        return(out)
     } else {
-        return(all.vars(formula)[-1])
+        out <- all.vars(formula)[-1]
+        if(length(out) == 0) {
+            out <- "1"
+        }
+        return(out)
     }
 
     return(rhs_name)
