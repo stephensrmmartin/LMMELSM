@@ -34,6 +34,7 @@
 ##' @author Stephen R. Martin
 ##' @import rstan
 ##' @importFrom parallel detectCores
+##' @export
 melsm_latent <- function(formula, group, data, ...) {
     # TODO: Add default sampling handling
     # TODO: For a package, make sure to use stanmodels list instead.
