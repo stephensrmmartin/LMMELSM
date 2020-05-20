@@ -76,7 +76,7 @@ simulate.uni.fe <- function(n,
                     mu_beta, logsd_beta,
                     mu_logsd_cor, mu_logsd_sigma,
                     L2_pred_only,
-                    eta, mu_logsd_re
+                    eta, eta_logsd, mu_logsd_re
                 ),
                 data = nlist(
                     N, J, F, K, P, Q,
