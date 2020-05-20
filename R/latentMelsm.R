@@ -118,7 +118,7 @@ melsm_latent <- function(formula, group, data, ...) {
     }
 
     # Get group spec
-    group <- substitute(group)
+    group <- group
     group_name <- deparse(group)
 
     # Create model frame (All predictors, indicators, and the grouping variable)
