@@ -65,8 +65,8 @@ data {
   int Q; // Number of predictors (logsd); RE Intercept only (for now) [Does not include intercept]
 
   int group[N]; // Grouping indicator
-  matrix[N, P] mu_pred; // Location predictors
-  matrix[N, Q] logsd_pred; // Scale predictors
+  matrix[N, P] x_loc; // Location predictors
+  matrix[N, Q] x_sca; // Scale predictors
 
   // Indicators
   int J_f[F]; // Number of indicators for each factor
@@ -83,12 +83,12 @@ transformed data {
   int intercept_only = P == 0 && Q == 0; // Whether intercept-only; allows quicker computations
   int lambda_total = sum(J_f);
   int l1_indices[K] = l1_to_l2_indices(K, group);
-  matrix[K, P] mu_pred_l2;
-  matrix[K, Q] logsd_pred_l2;
+  matrix[K, P] x_loc_l2;
+  matrix[K, Q] x_sca_l2;
 
   if(L2_pred_only) {
-    mu_pred_l2 = l1_to_l2(mu_pred, l1_indices);
-    logsd_pred_l2 = l1_to_l2(logsd_pred, l1_indices);
+    x_loc_l2 = l1_to_l2(x_loc, l1_indices);
+    x_sca_l2 = l1_to_l2(x_sca, l1_indices);
   }
 }
 
@@ -124,18 +124,18 @@ transformed parameters {
   eta = mu_random[group]; // eta = 0 + u[0i]^(mu)
   if(P >= 1) { // + XB
     if(L2_pred_only) { // Multiply once, then broadcast
-      eta += (mu_pred_l2 * mu_beta)[group];
+      eta += (x_loc_l2 * mu_beta)[group];
     } else {
-      eta += mu_pred * mu_beta;
+      eta += x_loc * mu_beta;
     }
   }
   // Scale Predictions
   eta_logsd = logsd_random[group]; // logsd = 0 + u[0i]^(logsd)
   if(Q >= 1) { // + ZG
     if(L2_pred_only) { // Multiply once, then broadcast
-      eta_logsd += (logsd_pred_l2 * logsd_beta)[group];
+      eta_logsd += (x_sca_l2 * logsd_beta)[group];
     } else {
-      eta_logsd += logsd_pred * logsd_beta;
+      eta_logsd += x_sca * logsd_beta;
     }
   }
 
@@ -174,7 +174,7 @@ model {
   mu_logsd_random_L ~ lkj_corr_cholesky(1);
   mu_logsd_random_sigma ~ std_normal();
 
-  if(prior_only != 0){
+  if(!prior_only){
     for(j in 1:J) {
       y[,j] ~ normal_id_glm(eta, nu[j], lambda[,j], sigma[j]);
     }
