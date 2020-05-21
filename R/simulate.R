@@ -87,7 +87,8 @@ simulate.uni.fe <- function(n,
                     group,
                     J_f = array(J, dim = c(1)),
                     F_ind = matrix(1:J, nrow=1),
-                    L2_pred_only
+                    L2_pred_only,
+                    prior_only = FALSE
                 ),
                 df = df)
 
@@ -111,4 +112,89 @@ simulate.uni.fe <- function(n,
         X <- mvrnorm(n * K, mu = rep(0, P), Sigma = diag(1, P, P))
     }
     return(X)
+}
+
+simulate.multi.fe <- function(n,
+                              K,
+                              lambda,
+                              resid,
+                              nu,
+                              mu_beta = NULL,
+                              logsd_beta = NULL,
+                              mu_logsd_cor,
+                              mu_logsd_sigma,
+                              epsilon_cor,
+                              L2_pred_only = FALSE,
+                              X_loc = NULL,
+                              X_sca = NULL) {
+    P <- nrow(mu_beta) %IfNull% 0
+    Q <- nrow(logsd_beta) %IfNull% 0
+    F <- nrow(lambda)
+    J <- ncol(lambda)
+    N <- n * K
+    group <- rep(1:K, each = n)
+
+    if(P > 0) X_loc <- X_loc %IfNull% .simulate.X(n, K, P, L2_pred_only)
+    if(Q > 0) X_sca <- X_sca %IfNull% .simulate.X(n, K, Q, L2_pred_only)
+
+    eta_mu <- matrix(0, nrow = N, ncol = F)
+    eta_logsd <- matrix(0, nrow = N, ncol = F)
+
+    if(P > 0) eta_mu <- eta_mu + X_loc %*% mu_beta
+    if(Q > 0) eta_logsd <- eta_logsd + X_sca %*% logsd_beta
+
+    mu_logsd_re <- mvrnorm(K, mu = rep(0, 2*F), Sigma = diag(mu_logsd_sigma) %*% mu_logsd_cor %*% diag(mu_logsd_sigma))
+    eta_mu <- eta_mu + mu_logsd_re[group, 1:F]
+    eta_logsd <- eta_logsd + mu_logsd_re[group, (F+1):(2*F)]
+
+    eta <- eta_mu
+    for(n in 1:N) {
+        eta[n,] <- eta[n,] + mvrnorm(1, rep(0, F), Sigma = diag(exp(eta_logsd[n,])) %*% epsilon_cor %*% diag(exp(eta_logsd[n,])))
+    }
+
+    Y <- matrix(nu, nrow = N, ncol = J, byrow = TRUE) + eta %*% lambda + matrix(rnorm(N*J, 0, resid), nrow = N, ncol = J, byrow = TRUE)
+
+    df <- as.data.frame(Y)
+    colnames(df) <- paste0("obs_", 1:J)
+    df$subject <- group
+
+    if(P > 0) {
+        colnames(X_loc) <- paste0("loc_", 1:P)
+        df <- cbind(df, X_loc)
+    }
+    if(Q > 0) {
+        colnames(X_sca) <- paste0("sca_", 1:Q)
+        df <- cbind(df, X_sca)
+    }
+
+    J_f <- apply(lambda, 1, function(r) {
+        sum(r != 0)
+    })
+    F_ind <- matrix(0, nrow = F, ncol = J)
+    for(r in 1:F) {
+        F_ind[r,1:(J_f[r])] <- which(lambda[r,] != 0)
+    }
+
+    out <- list(params = nlist(
+                    N, J, F, K, P, Q, n,
+                    lambda, resid, nu,
+                    mu_beta, logsd_beta,
+                    mu_logsd_cor, mu_logsd_sigma,
+                    epsilon_cor,
+                    L2_pred_only,
+                    eta, eta_logsd, mu_logsd_re
+                ),
+                data = nlist(
+                    N, J, F, K, P, Q,
+                    P_random = 0, Q_random = 0,
+                    x_loc = X_loc,
+                    x_sca = X_sca,
+                    y = Y,
+                    group,
+                    J_f,
+                    F_ind,
+                    L2_pred_only,
+                    prior_only = FALSE
+                ),
+                df = df)
 }

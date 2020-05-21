@@ -1,5 +1,8 @@
 library(LMMELSM)
 
+##############
+# Univariate #
+##############
 set.seed(14)
 d <- LMMELSM:::simulate.uni.fe(
                      n = 20,
@@ -18,6 +21,40 @@ d <- LMMELSM:::simulate.uni.fe(
 head(d$df)
 
 sOut <- melsm_latent(list(myfactor ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5 + obs_6 + obs_7 + obs_8 + obs_9 + obs_10, location ~ loc_1 + loc_2, scale ~ sca_1 + sca_2), subject, d$df)
+summary(sOut, pars = c("lambda", "nu", "sigma"))$summary
+summary(sOut, pars = c("mu_logsd_random_sigma", "Omega_eta", "Omega_mean_logsd"))$summary
+summary(sOut, pars = c("mu_beta","logsd_beta"))$summary
+
+################
+# Multivariate #
+################
+
+library(LMMELSM)
+set.seed(14)
+d <- LMMELSM:::simulate.multi.fe(
+                   n = 20,
+                   K = 200,
+                   lambda = matrix(c(.7, .7, .7, .8, .9, 0, 0, 0, 0, 0,
+                                     0, 0, 0, 0, 0, .7, .7, .7, .8, .9), nrow = 2, ncol = 10, byrow = TRUE),
+                   resid = rep(1, 10),
+                   nu = rep(0, 10),
+                   mu_beta = matrix(c(.4, -.4,
+                                      .6, -.6), nrow = 2, ncol = 2, byrow = TRUE),
+                   logsd_beta = matrix(c(.4, -.4,
+                                      .6, -.6), nrow = 2, ncol = 2, byrow = TRUE),
+                   mu_logsd_cor = matrix(c(1, .6, 0, 0,
+                                           .6, 1, 0, 0,
+                                           0, 0, 1, .8,
+                                           0, 0, .8, 1), ncol = 4, nrow = 4, byrow = TRUE),
+                   mu_logsd_sigma = rep(.3, 4),
+                   epsilon_cor = matrix(c(1, .5,
+                                          .5, 1), nrow = 2, ncol = 2, byrow = TRUE),
+                   L2_pred_only = FALSE,
+                   X_loc = NULL,
+                   X_sca = NULL
+               )
+
+sOut <- melsm_latent(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5, factor2 ~ obs_6 + obs_7 + obs_8 + obs_9 + obs_10, location ~ loc_1 + loc_2, scale ~ sca_1 + sca_2), subject, d$df)
 summary(sOut, pars = c("lambda", "nu", "sigma"))$summary
 summary(sOut, pars = c("mu_logsd_random_sigma", "Omega_eta", "Omega_mean_logsd"))$summary
 summary(sOut, pars = c("mu_beta","logsd_beta"))$summary
