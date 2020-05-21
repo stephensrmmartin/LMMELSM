@@ -63,6 +63,10 @@ data {
   int K; // Number of groups
   int P; // Number of predictors (location); RE Intercept only (for now) [Does not include intercept]
   int Q; // Number of predictors (logsd); RE Intercept only (for now) [Does not include intercept]
+  int P_random; // Number of random location coefficients
+  int Q_random; // Number of random scale coefficients
+  int P_random_ind[P_random]; // Indices in x_loc corresponding to random location predictors
+  int Q_random_ind[Q_random]; // Indices in x_loc corresponding to random scale predictors
 
   int group[N]; // Grouping indicator
   matrix[N, P] x_loc; // Location predictors
