@@ -69,7 +69,7 @@ library(LMMELSM)
 set.seed(14)
 d <- LMMELSM:::simulate.multi.re(
                    n = 20,
-                   K = 30,
+                   K = 200,
                    lambda = matrix(c(.7, .7, .7, .8, .9), nrow = 1, ncol = 5, byrow = TRUE),
                    resid = rep(1, 5),
                    nu = rep(0, 5),
@@ -87,4 +87,35 @@ sOut <- melsm_latent(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5, locat
 summary(sOut, pars = c("lambda", "nu", "sigma"))$summary
 summary(sOut, pars = c("mu_logsd_betas_random_sigma", "Omega_eta", "Omega_mean_logsd"))$summary
 summary(sOut, pars = c("mu_beta","logsd_beta"))$summary
-summary(sOut, pars = c("mu_beta_random","logsd_beta_random"))$summary
+head(sort(summary(sOut, pars = c("mu_beta_random","logsd_beta_random"))$summary[,"Rhat"], decreasing = TRUE))
+
+
+####################
+# Multivariate, RE #
+####################
+
+library(LMMELSM)
+
+set.seed(14)
+
+d <- LMMELSM:::simulate.multi.re(
+                   n = 50,
+                   K = 50,
+                   lambda = matrix(c(.7, .7, .7, .8, .9, 0, 0, 0, 0, 0,
+                                     0, 0, 0, 0, 0, .7, .7, .7, .8, .9), nrow = 2, ncol = 10, byrow = TRUE),
+                   resid = rep(1, 10),
+                   nu = rep(0, 10),
+                   mu_beta = matrix(c(.4, -.6), ncol = 2, nrow = 2),
+                   logsd_beta = matrix(c(.4, -.6), ncol = 2, nrow = 2),
+                   P_random_ind = c(1),
+                   Q_random_ind = c(1),
+                   mu_logsd_betas_cor = diag(1, 2 + 2 + 2*2),
+                   mu_logsd_betas_sigma = rep(.3, 2 + 2 + 2*2),
+                   epsilon_cor = matrix(c(1, -.4,
+                                          -.4, 1), 2, 2)
+               )
+
+sOut <- melsm_latent(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5,
+                          factor2 ~ obs_6 + obs_7 + obs_8 + obs_9 + obs_10,
+                          location ~ loc_1 + loc_2 | loc_1,
+                          scale ~ sca_1 + sca_2 | sca_1), subject, d$df, iter = 1000)
