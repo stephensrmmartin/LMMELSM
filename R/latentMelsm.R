@@ -68,7 +68,7 @@ melsm_latent <- function(formula, group, data, ...) {
               "logsd_random",
               "mu_beta_random",
               "logsd_beta_random",
-              "mu_logsd_random_sigma",
+              "mu_logsd_betas_random_sigma",
               "Omega_eta",
               "Omega_mean_logsd")
     stan_args$pars <- pars
