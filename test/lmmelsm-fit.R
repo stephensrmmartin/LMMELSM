@@ -64,6 +64,9 @@ summary(sOut, pars = c("mu_beta","logsd_beta"))$summary
 # Univariate, Random effects #
 ##############################
 
+library(LMMELSM)
+
+set.seed(14)
 d <- LMMELSM:::simulate.multi.re(
                    n = 20,
                    K = 200,
@@ -78,3 +81,5 @@ d <- LMMELSM:::simulate.multi.re(
                    mu_logsd_betas_sigma = rep(.3, 2 + 2 + 2),
                    epsilon_cor = matrix(1, 1, 1)
                )
+
+sOut <- melsm_latent(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5, location ~ loc_1 + loc_2 | loc_1 + loc_2, scale ~ sca_1 + sca_2 | sca_1 + sca_2), subject, d$df)
