@@ -149,7 +149,7 @@ simulate.multi.fe <- function(n,
 
     eta <- eta_mu
     for(n in 1:N) {
-        eta[n,] <- eta[n,] + mvrnorm(1, rep(0, F), Sigma = diag(exp(eta_logsd[n,])) %*% epsilon_cor %*% diag(exp(eta_logsd[n,])))
+        eta[n,] <- eta[n,] + mvrnorm(1, rep(0, F), Sigma = diag(exp(eta_logsd[n,]), F, F) %*% epsilon_cor %*% diag(exp(eta_logsd[n,]), F, F))
     }
 
     Y <- matrix(nu, nrow = N, ncol = J, byrow = TRUE) + eta %*% lambda + matrix(rnorm(N*J, 0, resid), nrow = N, ncol = J, byrow = TRUE)
@@ -239,7 +239,7 @@ simulate.multi.re <- function(n,
     etas_logsd <- eta_logsd + mu_logsd_betas_re[group, (F + 1):(2*F)]
 
     mu_beta_random <- array(t(mu_logsd_betas_re[, (2*F + 1):(2*F + P_random)]), dim = c(P, F, K))
-    logsd_beta_random <- array(t(mu_logsd_betas_re[, (2*F + P_random + 1):(2*F + P_random + Q_random)]))
+    logsd_beta_random <- array(t(mu_logsd_betas_re[, (2*F + P_random + 1):(2*F + P_random + Q_random)]), dim = c(Q, F, K))
 
     for(n in 1:N) {
         if(P_random > 0) {
@@ -253,7 +253,7 @@ simulate.multi.re <- function(n,
     # Eta
     eta <- eta_mu
     for(n in 1:N) {
-        eta[n,] <- eta[n,] + mvrnorm(1, rep(0, F), Sigma = diag(exp(eta_logsd[n,]))) %*% epsilon_cor %*% diag(exp(eta_logsd[n,]))
+        eta[n,] <- eta[n,] + mvrnorm(1, rep(0, F), Sigma = diag(exp(eta_logsd[n,]), F, F) %*% epsilon_cor %*% diag(exp(eta_logsd[n,]), F, F))
     }
 
     # Measurement model
@@ -284,9 +284,9 @@ simulate.multi.re <- function(n,
                     P_random_ind, Q_random_ind,
                     lambda, resid, nu,
                     mu_beta, logsd_beta,
-                    mu_logsd_cor, mu_logsd_sigma,
+                    mu_logsd_betas_cor, mu_logsd_betas_sigma,
                     epsilon_cor,
-                    L2_pred_only,
+                    L2_pred_only = FALSE,
                     eta, eta_logsd, mu_logsd_betas_re
                 ),
                 data = nlist(
@@ -299,7 +299,7 @@ simulate.multi.re <- function(n,
                     group,
                     J_f,
                     F_ind,
-                    L2_pred_only,
+                    L2_pred_only = FALSE,
                     prior_only = FALSE
                 ),
                 df = df)
