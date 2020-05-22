@@ -69,7 +69,7 @@ library(LMMELSM)
 set.seed(14)
 d <- LMMELSM:::simulate.multi.re(
                    n = 20,
-                   K = 200,
+                   K = 30,
                    lambda = matrix(c(.7, .7, .7, .8, .9), nrow = 1, ncol = 5, byrow = TRUE),
                    resid = rep(1, 5),
                    nu = rep(0, 5),
@@ -87,3 +87,4 @@ sOut <- melsm_latent(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5, locat
 summary(sOut, pars = c("lambda", "nu", "sigma"))$summary
 summary(sOut, pars = c("mu_logsd_betas_random_sigma", "Omega_eta", "Omega_mean_logsd"))$summary
 summary(sOut, pars = c("mu_beta","logsd_beta"))$summary
+summary(sOut, pars = c("mu_beta_random","logsd_beta_random"))$summary
