@@ -220,5 +220,5 @@ model {
 
 generated quantities {
   corr_matrix[F] Omega_eta = multiply_lower_tri_self_transpose(epsilon_L);
-  corr_matrix[F*2] Omega_mean_logsd = multiply_lower_tri_self_transpose(mu_logsd_betas_random_L);
+  corr_matrix[F*2 + P_random*F + Q_random*F] Omega_mean_logsd = multiply_lower_tri_self_transpose(mu_logsd_betas_random_L);
 }
