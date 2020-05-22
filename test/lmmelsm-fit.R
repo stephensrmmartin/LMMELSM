@@ -58,3 +58,23 @@ sOut <- melsm_latent(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5, facto
 summary(sOut, pars = c("lambda", "nu", "sigma"))$summary
 summary(sOut, pars = c("mu_logsd_random_sigma", "Omega_eta", "Omega_mean_logsd"))$summary
 summary(sOut, pars = c("mu_beta","logsd_beta"))$summary
+
+
+##############################
+# Univariate, Random effects #
+##############################
+
+d <- LMMELSM:::simulate.multi.re(
+                   n = 20,
+                   K = 200,
+                   lambda = matrix(c(.7, .7, .7, .8, .9), nrow = 1, ncol = 5, byrow = TRUE),
+                   resid = rep(1, 5),
+                   nu = rep(0, 5),
+                   mu_beta = matrix(c(.4, -.6), ncol = 1),
+                   logsd_beta = matrix(c(.4, -.6), ncol = 1),
+                   P_random_ind = c(1, 2),
+                   Q_random_ind = c(1, 2),
+                   mu_logsd_betas_cor = diag(1, 2 + 2 + 2),
+                   mu_logsd_betas_sigma = rep(.3, 2 + 2 + 2),
+                   epsilon_cor = matrix(1, 1, 1)
+               )
