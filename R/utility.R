@@ -47,10 +47,10 @@ nlist <- function(...) {
         1:x
     })
 
-    args <- c(list(array), dims, ind, drop = FALSE)
+    args <- c(list(a), dims, ind, drop = FALSE)
     a_sub <- do.call(`[`, args)
 
-    out <- array(a_sub, dim = dims[1:(lastDim - 1)])
+    out <- array(a_sub, dim = dim_a[1:(lastDim - 1)])
 
     return(out)
 }
