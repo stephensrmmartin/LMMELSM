@@ -83,3 +83,7 @@ d <- LMMELSM:::simulate.multi.re(
                )
 
 sOut <- melsm_latent(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5, location ~ loc_1 + loc_2 | loc_1 + loc_2, scale ~ sca_1 + sca_2 | sca_1 + sca_2), subject, d$df)
+
+summary(sOut, pars = c("lambda", "nu", "sigma"))$summary
+summary(sOut, pars = c("mu_logsd_betas_random_sigma", "Omega_eta", "Omega_mean_logsd"))$summary
+summary(sOut, pars = c("mu_beta","logsd_beta"))$summary
