@@ -138,7 +138,7 @@ parameters {
 
 transformed parameters {
   matrix[F, J] lambda = lambda_mat(J, F, J_f, F_ind, lambda_est);
-  matrix[K, F*2] mu_logsd_betas_random = z_to_re(mu_logsd_betas_random_z, mu_logsd_betas_random_L, mu_logsd_betas_random_sigma);
+  matrix[K, F*2 + P_random*F + Q_random*F] mu_logsd_betas_random = z_to_re(mu_logsd_betas_random_z, mu_logsd_betas_random_L, mu_logsd_betas_random_sigma);
   matrix[K, F] mu_random = mu_logsd_betas_random[, 1:F];
   matrix[K, F] logsd_random = mu_logsd_betas_random[, (F+1):(F*2)];
   matrix[P_random, F] mu_beta_random[K] = mat_to_mat_array(P_random, F, mu_logsd_betas_random[, (F*2 + 1):(F*2 + P_random)]); // TODO: Need to convert the F*P_random + F*Q_random vector to an K-array of P_random x F matrices.
