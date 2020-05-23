@@ -119,3 +119,8 @@ sOut <- melsm_latent(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5,
                           factor2 ~ obs_6 + obs_7 + obs_8 + obs_9 + obs_10,
                           location ~ loc_1 + loc_2 | loc_1,
                           scale ~ sca_1 + sca_2 | sca_1), subject, d$df, iter = 1000)
+
+summary(sOut, pars = c("lambda", "nu", "sigma"))$summary
+summary(sOut, pars = c("mu_logsd_betas_random_sigma", "Omega_eta", "Omega_mean_logsd"))$summary
+summary(sOut, pars = c("mu_beta","logsd_beta"))$summary
+head(sort(summary(sOut, pars = c("mu_beta_random","logsd_beta_random"))$summary[,"Rhat"], decreasing = TRUE))
