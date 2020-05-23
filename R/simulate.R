@@ -236,7 +236,7 @@ simulate.multi.re <- function(n,
     mu_logsd_betas_re <- mvrnorm(K, mu = rep(0, 2*F + P_random*F + Q_random*F), Sigma = diag(mu_logsd_betas_sigma) %*% mu_logsd_betas_cor %*% diag(mu_logsd_betas_sigma))
 
     eta_mu <- eta_mu + mu_logsd_betas_re[group, 1:F]
-    etas_logsd <- eta_logsd + mu_logsd_betas_re[group, (F + 1):(2*F)]
+    eta_logsd <- eta_logsd + mu_logsd_betas_re[group, (F + 1):(2*F)]
 
     mu_beta_random <- array(t(mu_logsd_betas_re[, (2*F + 1):(2*F + P_random*F)]), dim = c(P_random, F, K))
     logsd_beta_random <- array(t(mu_logsd_betas_re[, (2*F + P_random*F + 1):(2*F + P_random*F + Q_random*F)]), dim = c(Q_random, F, K))
