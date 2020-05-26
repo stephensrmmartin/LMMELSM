@@ -54,6 +54,24 @@ functions {
     return(where_l1_first_k);
   }
 
+  /*
+    Given a KxM matrix, convert to a K-length array of RxC matrices.
+    @param int R: Rows in output matrices.
+    @param int C: Columns in output matrices.
+    @param matrix mat: KxM Matrix to restructure.
+    @return matrix[]: Array of RxC matrices.
+   */
+  matrix[] mat_to_mat_array(int R, int C, matrix mat) {
+    int K = rows(mat);
+    matrix[R, C] out[K];
+
+    for(k in 1:K) {
+      out[k] = to_matrix(mat[k], R, C);
+    }
+
+    return(out);
+  }
+
 }
 
 data {
@@ -63,6 +81,10 @@ data {
   int K; // Number of groups
   int P; // Number of predictors (location); RE Intercept only (for now) [Does not include intercept]
   int Q; // Number of predictors (logsd); RE Intercept only (for now) [Does not include intercept]
+  int P_random; // Number of random location coefficients
+  int Q_random; // Number of random scale coefficients
+  int P_random_ind[P_random]; // Indices in x_loc corresponding to random location predictors
+  int Q_random_ind[Q_random]; // Indices in x_loc corresponding to random scale predictors
 
   int group[N]; // Grouping indicator
   matrix[N, P] x_loc; // Location predictors
@@ -106,36 +128,51 @@ parameters {
   matrix[Q, F] logsd_beta; // Fixed multivariate coefficients for scale model (Not including intercept)
   cholesky_factor_corr[F] epsilon_L; // Assumed equal across K.
   //// REs
-  matrix[K, F*2] mu_logsd_random_z; // Random intercepts for mu, logsd
-  cholesky_factor_corr[F*2] mu_logsd_random_L;
-  vector<lower=0>[F*2] mu_logsd_random_sigma; // No between-person scale model [yet].
+  // For REs: We have P_random coefficients *per* factor; vector eta[ik] = X * matrix(B) + Z * matrix(u_i)
+  matrix[K, F*2 + P_random*F + Q_random*F] mu_logsd_betas_random_z; // Random intercepts for mu, logsd
+  cholesky_factor_corr[F*2 + P_random*F + Q_random*F] mu_logsd_betas_random_L;
+  vector<lower=0>[F*2 + P_random*F + Q_random*F] mu_logsd_betas_random_sigma; // No between-person scale model [yet]. May want to split mu_logsd from Var(random slopes).
 
   
 }
 
 transformed parameters {
   matrix[F, J] lambda = lambda_mat(J, F, J_f, F_ind, lambda_est);
-  matrix[K, F*2] mu_logsd_random = z_to_re(mu_logsd_random_z, mu_logsd_random_L, mu_logsd_random_sigma);
-  matrix[K, F] mu_random = mu_logsd_random[, 1:F];
-  matrix[K, F] logsd_random = mu_logsd_random[, (F+1):(F*2)];
+  matrix[K, F*2 + P_random*F + Q_random*F] mu_logsd_betas_random = z_to_re(mu_logsd_betas_random_z, mu_logsd_betas_random_L, mu_logsd_betas_random_sigma);
+  matrix[K, F] mu_random = mu_logsd_betas_random[, 1:F];
+  matrix[K, F] logsd_random = mu_logsd_betas_random[, (F+1):(F*2)];
+  matrix[P_random, F] mu_beta_random[K] = mat_to_mat_array(P_random, F, mu_logsd_betas_random[, (F*2 + 1):(F*2 + P_random*F)]); // TODO: Need to convert the F*P_random + F*Q_random vector to an K-array of P_random x F matrices.
+  matrix[Q_random, F] logsd_beta_random[K] = mat_to_mat_array(Q_random, F, mu_logsd_betas_random[, (F*2 + P_random*F + 1):(F*2 + P_random*F + Q_random*F)]);
   matrix[N, F] eta;
   matrix[N, F] eta_logsd;
   // Location Predictions
   eta = mu_random[group]; // eta = 0 + u[0i]^(mu)
   if(P >= 1) { // + XB
-    if(L2_pred_only) { // Multiply once, then broadcast
+    if(L2_pred_only) { // Multiply once, then broadcast; No random effects possible.
       eta += (x_loc_l2 * mu_beta)[group];
     } else {
       eta += x_loc * mu_beta;
     }
   }
+  // Random effects
+  if(P_random >= 1) {
+    for(n in 1:N) {
+      eta[n] += x_loc[n, P_random_ind] * mu_beta_random[group[n]];
+    }
+  }
   // Scale Predictions
   eta_logsd = logsd_random[group]; // logsd = 0 + u[0i]^(logsd)
   if(Q >= 1) { // + ZG
-    if(L2_pred_only) { // Multiply once, then broadcast
+    if(L2_pred_only) { // Multiply once, then broadcast; No random effects possible
       eta_logsd += (x_sca_l2 * logsd_beta)[group];
     } else {
       eta_logsd += x_sca * logsd_beta;
+    }
+  }
+  // Random effects
+  if(Q_random >= 1) {
+    for(n in 1:N) {
+      eta_logsd[n] += x_sca[n, Q_random_ind] * logsd_beta_random[group[n]];
     }
   }
 
@@ -170,9 +207,9 @@ model {
   to_vector(logsd_beta) ~ std_normal();
   to_vector(epsilon_z) ~ std_normal();
   epsilon_L ~ lkj_corr_cholesky(1);
-  to_vector(mu_logsd_random_z) ~ std_normal();
-  mu_logsd_random_L ~ lkj_corr_cholesky(1);
-  mu_logsd_random_sigma ~ std_normal();
+  to_vector(mu_logsd_betas_random_z) ~ std_normal();
+  mu_logsd_betas_random_L ~ lkj_corr_cholesky(1);
+  mu_logsd_betas_random_sigma ~ std_normal();
 
   if(!prior_only){
     for(j in 1:J) {
@@ -183,5 +220,5 @@ model {
 
 generated quantities {
   corr_matrix[F] Omega_eta = multiply_lower_tri_self_transpose(epsilon_L);
-  corr_matrix[F*2] Omega_mean_logsd = multiply_lower_tri_self_transpose(mu_logsd_random_L);
+  corr_matrix[F*2 + P_random*F + Q_random*F] Omega_mean_logsd = multiply_lower_tri_self_transpose(mu_logsd_betas_random_L);
 }

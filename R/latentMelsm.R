@@ -66,7 +66,9 @@ melsm_latent <- function(formula, group, data, ...) {
               "logsd_beta",
               "mu_random",
               "logsd_random",
-              "mu_logsd_random_sigma",
+              "mu_beta_random",
+              "logsd_beta_random",
+              "mu_logsd_betas_random_sigma",
               "Omega_eta",
               "Omega_mean_logsd")
     stan_args$pars <- pars
@@ -211,6 +213,7 @@ melsm_latent <- function(formula, group, data, ...) {
         P_random_RHS <- .get_RHS(formula(plist$location, rhs = 2))
         P_random <- length(P_random_RHS)
         P_random_ind <- match(P_random_RHS, colnames(x_loc))
+        P_random_ind <- array(P_random_ind, dim = c(P_random))
     } else {
         P_random <- 0
         P_random_ind <- integer()
@@ -220,6 +223,7 @@ melsm_latent <- function(formula, group, data, ...) {
         Q_random_RHS <- .get_RHS(formula(plist$scale, rhs = 2))
         Q_random <- length(Q_random_RHS)
         Q_random_ind <- match(Q_random_RHS, colnames(x_sca))
+        Q_random_ind <- array(Q_random_ind, dim = c(Q_random))
     } else {
         Q_random <- 0
         Q_random_ind <- integer()

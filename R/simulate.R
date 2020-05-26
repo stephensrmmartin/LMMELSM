@@ -149,7 +149,7 @@ simulate.multi.fe <- function(n,
 
     eta <- eta_mu
     for(n in 1:N) {
-        eta[n,] <- eta[n,] + mvrnorm(1, rep(0, F), Sigma = diag(exp(eta_logsd[n,])) %*% epsilon_cor %*% diag(exp(eta_logsd[n,])))
+        eta[n,] <- eta[n,] + mvrnorm(1, rep(0, F), Sigma = diag(exp(eta_logsd[n,]), F, F) %*% epsilon_cor %*% diag(exp(eta_logsd[n,]), F, F))
     }
 
     Y <- matrix(nu, nrow = N, ncol = J, byrow = TRUE) + eta %*% lambda + matrix(rnorm(N*J, 0, resid), nrow = N, ncol = J, byrow = TRUE)
@@ -194,6 +194,112 @@ simulate.multi.fe <- function(n,
                     J_f,
                     F_ind,
                     L2_pred_only,
+                    prior_only = FALSE
+                ),
+                df = df)
+}
+
+simulate.multi.re <- function(n,
+                              K,
+                              lambda,
+                              resid,
+                              nu,
+                              mu_beta,
+                              logsd_beta,
+                              P_random_ind,
+                              Q_random_ind,
+                              mu_logsd_betas_cor,
+                              mu_logsd_betas_sigma,
+                              epsilon_cor,
+                              X_loc = NULL,
+                              X_sca = NULL) {
+    J <- ncol(lambda)
+    F <- nrow(lambda)
+    P <- nrow(mu_beta)
+    Q <- nrow(logsd_beta)
+    P_random <- length(P_random_ind)
+    Q_random <- length(Q_random_ind)
+    N <- n * K
+    group <- rep(1:K, each = n)
+
+    X_loc <- X_loc %IfNull% .simulate.X(n, K, P, L2_pred_only = FALSE)
+    X_sca <- X_sca %IfNull% .simulate.X(n, K, Q, L2_pred_only = FALSE)
+
+    eta_mu <- matrix(0, nrow = N, ncol = F)
+    eta_logsd <- matrix(0, nrow = N, ncol = F)
+
+    # Fixed effects
+    eta_mu <- eta_mu + X_loc %*% mu_beta
+    eta_logsd <- eta_logsd + X_sca %*% logsd_beta
+
+    # Random effects (intercept and slopes)
+    mu_logsd_betas_re <- mvrnorm(K, mu = rep(0, 2*F + P_random*F + Q_random*F), Sigma = diag(mu_logsd_betas_sigma) %*% mu_logsd_betas_cor %*% diag(mu_logsd_betas_sigma))
+
+    eta_mu <- eta_mu + mu_logsd_betas_re[group, 1:F]
+    eta_logsd <- eta_logsd + mu_logsd_betas_re[group, (F + 1):(2*F)]
+
+    mu_beta_random <- array(t(mu_logsd_betas_re[, (2*F + 1):(2*F + P_random*F)]), dim = c(P_random, F, K))
+    logsd_beta_random <- array(t(mu_logsd_betas_re[, (2*F + P_random*F + 1):(2*F + P_random*F + Q_random*F)]), dim = c(Q_random, F, K))
+
+    for(n in 1:N) {
+        if(P_random > 0) {
+            eta_mu[n,] <- eta_mu[n,] + X_loc[n, P_random_ind, drop = FALSE] %*% .array_extract(mu_beta_random, group[n])
+        }
+        if(Q_random > 0) {
+            eta_logsd[n,] <- eta_logsd[n,] + X_sca[n, Q_random_ind, drop = FALSE] %*% .array_extract(logsd_beta_random, group[n])
+        }
+    }
+
+    # Eta
+    eta <- eta_mu
+    for(n in 1:N) {
+        eta[n,] <- eta[n,] + mvrnorm(1, rep(0, F), Sigma = diag(exp(eta_logsd[n,]), F, F) %*% epsilon_cor %*% diag(exp(eta_logsd[n,]), F, F))
+    }
+
+    # Measurement model
+    Y <- matrix(nu, nrow = N, ncol = J, byrow = TRUE) + eta %*% lambda + matrix(rnorm(N*J, 0, resid), nrow = N, ncol = J, byrow = TRUE)
+
+    df <- as.data.frame(Y)
+    colnames(df) <- paste0("obs_", 1:J)
+    df$subject <- group
+
+    colnames(X_loc) <- paste0("loc_", 1:P)
+    df <- cbind(df, X_loc)
+
+    colnames(X_sca) <- paste0("sca_", 1:Q)
+    df <- cbind(df, X_sca)
+
+    
+    J_f <- apply(lambda, 1, function(r) {
+        sum(r != 0)
+    })
+    F_ind <- matrix(0, nrow = F, ncol = J)
+    for(r in 1:F) {
+        F_ind[r,1:(J_f[r])] <- which(lambda[r,] != 0)
+    }
+
+    out <- list(params = nlist(
+                    N, J, F, K, P, Q, n,
+                    P_random, Q_random,
+                    P_random_ind, Q_random_ind,
+                    lambda, resid, nu,
+                    mu_beta, logsd_beta,
+                    mu_logsd_betas_cor, mu_logsd_betas_sigma,
+                    epsilon_cor,
+                    L2_pred_only = FALSE,
+                    eta, eta_logsd, mu_logsd_betas_re
+                ),
+                data = nlist(
+                    N, J, F, K, P, Q,
+                    P_random, Q_random,
+                    P_random_ind, Q_random_ind,
+                    x_loc = X_loc,
+                    x_sca = X_sca,
+                    y = Y,
+                    group,
+                    J_f,
+                    F_ind,
+                    L2_pred_only = FALSE,
                     prior_only = FALSE
                 ),
                 df = df)

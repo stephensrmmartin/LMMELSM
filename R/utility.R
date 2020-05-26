@@ -38,3 +38,19 @@ nlist <- function(...) {
 
     return(out)
 }
+
+.array_extract <- function(a, ind) {
+    dim_a <- dim(a)
+    lastDim <- length(dim_a)
+
+    dims <- lapply(dim_a[1:(lastDim - 1)], function(x) {
+        1:x
+    })
+
+    args <- c(list(a), dims, ind, drop = FALSE)
+    a_sub <- do.call(`[`, args)
+
+    out <- array(a_sub, dim = dim_a[1:(lastDim - 1)])
+
+    return(out)
+}
