@@ -64,6 +64,7 @@ melsm_latent <- function(formula, group, data, ...) {
               "eta_logsd",
               "mu_beta",
               "logsd_beta",
+              "zeta",
               "mu_random",
               "logsd_random",
               "mu_beta_random",
