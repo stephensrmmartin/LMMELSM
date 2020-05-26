@@ -25,6 +25,28 @@ functions {
   }
 
   /*
+    Non-centered RE params to REs, with predicted variances.
+    @param matrix[K, num] z; K = groups, num = number of REs.
+    @param cholesk_factor_corr[num] L;
+    @param vector[num] sigma; RE SDs (intercept, on exp scale)
+    @param matrix[K, R] x_bet_l2; Level-2 design matrix for log-scale contributions to bet. group SDs.
+    @param matrix[R, num] zeta; coefficient matrix.
+    @param matrix[K, num] REs;
+   */
+  matrix z_to_re_bet(matrix z, matrix L, vector sigma, matrix x_bet_l2, matrix zeta) {
+    int num = cols(z);
+    int K = rows(z);
+    matrix[K, num] sigmas = (rep_vector(1.0, K) * sigma') .* exp(x_bet_l2 * zeta);
+    matrix[K, num] out;
+
+    for(k in 1:K) {
+      out[k] = z[k] * diag_pre_multiply(sigma, L)';
+    }
+
+    return(out);
+  }
+
+  /*
     Convert repeated measures to subject-level dataset
     @return matrix[K, cols(l1)]; in order of 1:K, if using l1_to_l2_indices().
    */
@@ -81,6 +103,7 @@ data {
   int K; // Number of groups
   int P; // Number of predictors (location); RE Intercept only (for now) [Does not include intercept]
   int Q; // Number of predictors (logsd); RE Intercept only (for now) [Does not include intercept]
+  int R; // Number of predictors (between-logsd); Fixed effects only (inherentyl a level-2 question)
   int P_random; // Number of random location coefficients
   int Q_random; // Number of random scale coefficients
   int P_random_ind[P_random]; // Indices in x_loc corresponding to random location predictors
@@ -89,6 +112,7 @@ data {
   int group[N]; // Grouping indicator
   matrix[N, P] x_loc; // Location predictors
   matrix[N, Q] x_sca; // Scale predictors
+  matrix[N, R] x_bet; // Between predictors
 
   // Indicators
   int J_f[F]; // Number of indicators for each factor
@@ -107,10 +131,14 @@ transformed data {
   int l1_indices[K] = l1_to_l2_indices(K, group);
   matrix[K, P] x_loc_l2;
   matrix[K, Q] x_sca_l2;
+  matrix[K, R] x_bet_l2;
 
   if(L2_pred_only) {
     x_loc_l2 = l1_to_l2(x_loc, l1_indices);
     x_sca_l2 = l1_to_l2(x_sca, l1_indices);
+  }
+  if(R > 0) {
+    x_bet_l2 = l1_to_l2(x_bet, l1_indices);
   }
 }
 
@@ -121,24 +149,31 @@ parameters {
   row_vector<lower=0>[J] sigma; // No error var scale model.
 
   // Structural model
+
   //// Location model: mu[ik] = B[i,0] + x[ik]B; B[i,0] = 0 + u[i,0]^(mu)
   matrix[P, F] mu_beta; // Fixed multivariate coefficients (Not including intercept)
+
   //// Scale model: eta[ik] = mu[ik] + epsilon[ik]; epsilon[ik] ~ mvn(0, f(L, logsd[ik])); logsd[ik] = G[i,0] + z[ik]G;
   matrix[N, F] epsilon_z; // Stochastic latent error
   matrix[Q, F] logsd_beta; // Fixed multivariate coefficients for scale model (Not including intercept)
   cholesky_factor_corr[F] epsilon_L; // Assumed equal across K.
+
   //// REs
+
   // For REs: We have P_random coefficients *per* factor; vector eta[ik] = X * matrix(B) + Z * matrix(u_i)
   matrix[K, F*2 + P_random*F + Q_random*F] mu_logsd_betas_random_z; // Random intercepts for mu, logsd
   cholesky_factor_corr[F*2 + P_random*F + Q_random*F] mu_logsd_betas_random_L;
   vector<lower=0>[F*2 + P_random*F + Q_random*F] mu_logsd_betas_random_sigma; // No between-person scale model [yet]. May want to split mu_logsd from Var(random slopes).
 
-  
+  // Between-group variance model
+  matrix[R, F*2 + P_random*F + Q_random*F] zeta;
 }
 
 transformed parameters {
   matrix[F, J] lambda = lambda_mat(J, F, J_f, F_ind, lambda_est);
-  matrix[K, F*2 + P_random*F + Q_random*F] mu_logsd_betas_random = z_to_re(mu_logsd_betas_random_z, mu_logsd_betas_random_L, mu_logsd_betas_random_sigma);
+  matrix[K, F*2 + P_random*F + Q_random*F] mu_logsd_betas_random = R < 1 ?
+    z_to_re(mu_logsd_betas_random_z, mu_logsd_betas_random_L, mu_logsd_betas_random_sigma) :
+    z_to_re_bet(mu_logsd_betas_random_z, mu_logsd_betas_random_L, mu_logsd_betas_random_sigma, x_bet_l2, zeta);
   matrix[K, F] mu_random = mu_logsd_betas_random[, 1:F];
   matrix[K, F] logsd_random = mu_logsd_betas_random[, (F+1):(F*2)];
   matrix[P_random, F] mu_beta_random[K] = mat_to_mat_array(P_random, F, mu_logsd_betas_random[, (F*2 + 1):(F*2 + P_random*F)]); // TODO: Need to convert the F*P_random + F*Q_random vector to an K-array of P_random x F matrices.
@@ -203,6 +238,7 @@ model {
   lambda_est ~ std_normal();
   sigma ~ std_normal();
 
+  to_vector(zeta) ~ std_normal();
   to_vector(mu_beta) ~ std_normal();
   to_vector(logsd_beta) ~ std_normal();
   to_vector(epsilon_z) ~ std_normal();
