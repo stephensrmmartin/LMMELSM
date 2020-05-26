@@ -206,8 +206,10 @@ melsm_latent <- function(formula, group, data, ...) {
 
     x_loc <- model.matrix(plist$location, mf)[,-1]
     x_sca <- model.matrix(plist$scale, mf)[,-1]
+    x_bet <- model.matrix(plist$between, mf)[, -1]
     P <- ncol(x_loc)
     Q <- ncol(x_sca)
+    R <- ncol(x_bet)
 
     if(length(plist$location)[2] == 2) {
         P_random_RHS <- .get_RHS(formula(plist$location, rhs = 2))
@@ -231,18 +233,21 @@ melsm_latent <- function(formula, group, data, ...) {
 
     # Specify efficiency options
     ## intercept_only <- P == 0 & Q == 0
-    L2_pred_only <- .detect_L2_only(mf, group)
+    mf_loc_sca <- model.frame(.combine_RHS(plist[c("location","scale")]), mf)
+    L2_pred_only <- .detect_L2_only(mf_loc_sca, group)
 
 
     out <- nlist(L2_pred_only,
                  P,
                  Q,
+                 R,
                  P_random,
                  Q_random,
                  P_random_ind,
                  Q_random_ind,
                  x_loc,
-                 x_sca
+                 x_sca,
+                 x_bet
                  )
     return(out)
 }
