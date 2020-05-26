@@ -106,7 +106,7 @@ melsm_latent <- function(formula, group, data, ...) {
     ## mlist: List of measurement fact formulas
     ## plist: List of predictive location/scale formulas
     ## flist: All formulas (good for model framing)
-    plist <- list(location = Formula(location ~ 1), scale = Formula(scale ~ 1))
+    plist <- list(location = Formula(location ~ 1), scale = Formula(scale ~ 1), between = Formula(between ~ 1))
     which_loc_sca <- .which_location_scale(flist, reduce = TRUE)
     plist[names(which_loc_sca)] <- flist[which_loc_sca]
     mlist <- flist
@@ -338,17 +338,21 @@ melsm_latent <- function(formula, group, data, ...) {
 ##' @keywords internal
 .which_location_scale <- function(flist, reduce = TRUE) {
     lhs_names <- tolower(lapply(flist, .get_LHS))
-    loc_scale <- match(c("location", "scale"), lhs_names)
-    names(loc_scale) <- c("location", "scale")
+    loc_scale <- match(c("location", "scale", "between"), lhs_names)
+    names(loc_scale) <- c("location", "scale", "between")
 
     # Check whether multiple location/scales exist
     which_lhs_match_location <- lhs_names %in% c("location")
     which_lhs_match_scale <- lhs_names %in% c("scale")
+    which_lhs_match_between <- lhs_names %in% c("between")
     if(sum(which_lhs_match_location) > 1) {
         stop("Multiple formulas for 'location' provided.")
     }
     if(sum(which_lhs_match_scale) > 1) {
         stop("Multiple formulas for 'scale' provided.")
+    }
+    if(sum(which_lhs_match_between) > 1) {
+        stop("Multiple formulas for 'between' provided.")
     }
 
     if(reduce) {
