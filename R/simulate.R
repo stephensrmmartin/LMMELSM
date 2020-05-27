@@ -304,3 +304,101 @@ simulate.multi.re <- function(n,
                 ),
                 df = df)
 }
+
+simulate_lmmelsm <- function(n,
+                             K,
+                             lambda,
+                             resid,
+                             nu,
+                             mu_beta,
+                             logsd_beta,
+                             P_random_ind,
+                             Q_random_ind,
+                             mu_logsd_betas_cor,
+                             mu_logsd_betas_sigma,
+                             epsilon_cor,
+                             zeta,
+                             X_loc = NULL,
+                             X_sca = NULL,
+                             X_bet = NULL
+                             ) {
+    # Restructure; If not matrix, then make matrix, assume unidimensional model.
+    if(!is.matrix(lambda)) lambda <- matrix(lambda, nrow = 1)
+    if(!is.matrix(mu_beta)) mu_beta <- matrix(mu_beta, ncol = 1)
+    if(!is.matrix(logsd_beta)) logsd_beta <- matrix(logsd_beta, ncol = 1)
+
+    # Dimensions
+    J <- ncol(lambda) 
+    F <- nrow(lambda) 
+    P <- nrow(mu_beta)
+    Q <- nrow(logsd_beta)
+    R <- nrow(zeta) %IfNull% 0
+    P_random <- length(P_random_ind)
+    Q_random <- length(Q_random_ind)
+    N <- n * K
+
+    # Generate groups, if not provided
+    ## Removing this for now; requires more care, since n may not be balanced across groups.
+    ## group <- group %IfNull% rep(1:K, each = n)
+    group <- rep(1:K, each = n)
+
+    # Predictor data
+    if(P > 0) X_loc <- X_loc %IfNull% .simulate.X(n, K, P, L2_pred_only)
+    if(Q > 0) X_sca <- X_sca %IfNull% .simulate.X(n, K, Q, L2_pred_only)
+    if(R > 0) {
+        X_bet <- X_bet %IfNull% .simulate.X(n, K, R, L2_pred_only = TRUE)
+        X_bet_L2 <- X_bet[match(1:K, group), ]
+    }
+
+    # Generate latent values
+    eta_mu <- matrix(0, nrow = N, ncol = F)
+    eta_logsd <- matrix(0, nrow = N, ncol = F)
+
+    ## Fixed effects
+    if(P > 0) eta_mu <- eta_mu + X_loc %*% mu_beta
+    if(Q > 0) eta_logsd <- eta_logsd + X_sca %*% logsd_beta
+
+    ## Random effects
+    num_rands <- 2*F + P_random*F + Q_random*F
+    mu_logsd_betas_re <- matrix(0, nrow = K, ncol = num_rands)
+    if(num_rands != length(mu_logsd_betas_sigma)) stop("Incorrect number of mu_logsd_betas_sigma. Should contain ", num_rands, "elements")
+
+    #### Between variance model
+    mu_logsd_betas_sigmas <- matrix(mu_logsd_betas_sigma, nrow = K, ncol = num_rands, byrow = TRUE)
+    if(R > 0) {
+        if(ncol(zeta) != num_rands) stop("Mismatch between zeta dimensions and total number of random effects.")
+        mu_logsd_betas_sigmas <- mu_logsd_betas_sigmas * exp(X_bet_L2 %*% zeta)
+    }
+    #### Add RE contributions
+    for(i in 1:K) {
+        mu_logsd_betas_re[k,] <- mvrnorm(1, rep(0, num_rands), Sigma = diag(mu_logsd_betas_sigmas[k,], num_rands, num_rands) %*% mu_logsd_betas_cor %*% diag(mu_logsd_betas_sigmas[k,], num_rands, num_rands))
+    }
+
+    eta_mu <- eta_mu + mu_logsd_betas_re[group, 1:F]
+    eta_logsd <- eta_logsd + mu_logsd_betas_re[group, (F + 1):(2 * F)]
+
+    if(P_random > 0) {
+        mu_beta_random <- array(t(mu_logsd_betas_re[, (2*F + 1):(2*F + P_random*F)]), dim = c(P_random, F, K))
+        for(n in 1:N) {
+            eta_mu[n,] <- eta_mu[n,] + X_loc[n, P_random_ind, drop = FALSE] %*% .array_extract(mu_beta_random, group[n])
+        }
+    } else {mu_beta_random <- numeric()}
+    if(Q_random > 0) {
+        logsd_beta_random <- array(t(mu_logsd_betas_re[, (2*F + P_random*F + 1):(2*F + P_random*F + Q_random*F)]), dim = c(Q_random, F, K))
+        for(n in 1:N) {
+            eta_logsd[n,] <- eta_logsd[n,] + X_sca[n, Q_random_ind, drop = FALSE] %*% .array_extract(logsd_beta_random, group[n])
+        }
+    } else {logsd_beta_random <- numeric()}
+
+    # Generate Etas
+    eta <- eta_mu
+    for(n in 1:N) {
+        eta[n,] <- eta[n,] + mvrnorm(1, rep(0, F), Sigma = diag(exp(eta_logsd[n,]), F, F) %*% epsilon_cor %*% diag(exp(eta_logsd[n,]), F, F))
+    }
+
+    # Measurement model
+    Y <- matrix(nu, nrow = N, ncol = J, byrow = TRUE) + eta %*% lambda + matrix(rnorm(N*J, 0, resid), nrow = N, ncol = J, byrow = TRUE)
+
+    # Construct output
+
+}
