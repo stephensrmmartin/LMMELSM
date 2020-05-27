@@ -40,7 +40,7 @@ functions {
     matrix[K, num] out;
 
     for(k in 1:K) {
-      out[k] = z[k] * diag_pre_multiply(sigma, L)';
+      out[k] = z[k] * diag_pre_multiply(sigmas[k], L)';
     }
 
     return(out);
