@@ -311,10 +311,10 @@ simulate_lmmelsm <- function(n,
                              lambda,
                              resid,
                              nu,
-                             mu_beta,
-                             logsd_beta,
-                             P_random_ind,
-                             Q_random_ind,
+                             mu_beta = NULL,
+                             logsd_beta = NULL,
+                             P_random_ind = NULL,
+                             Q_random_ind = NULL,
                              mu_logsd_betas_cor,
                              mu_logsd_betas_sigma,
                              epsilon_cor,
@@ -331,11 +331,11 @@ simulate_lmmelsm <- function(n,
     # Dimensions
     J <- ncol(lambda) 
     F <- nrow(lambda) 
-    P <- nrow(mu_beta)
-    Q <- nrow(logsd_beta)
+    P <- nrow(mu_beta) %IfNull% 0
+    Q <- nrow(logsd_beta) %IfNull% 0
     R <- nrow(zeta) %IfNull% 0
-    P_random <- length(P_random_ind)
-    Q_random <- length(Q_random_ind)
+    P_random <- length(P_random_ind) %IfNull% 0
+    Q_random <- length(Q_random_ind) %IfNull% 0
     N <- n * K
 
     # Generate groups, if not provided
@@ -384,6 +384,7 @@ simulate_lmmelsm <- function(n,
             eta_mu[n,] <- eta_mu[n,] + X_loc[n, P_random_ind, drop = FALSE] %*% .array_extract(mu_beta_random, group[n])
         }
     } else {mu_beta_random <- numeric()}
+
     if(Q_random > 0) {
         logsd_beta_random <- array(t(mu_logsd_betas_re[, (2*F + P_random*F + 1):(2*F + P_random*F + Q_random*F)]), dim = c(Q_random, F, K))
         for(n in 1:N) {
@@ -401,5 +402,58 @@ simulate_lmmelsm <- function(n,
     Y <- matrix(nu, nrow = N, ncol = J, byrow = TRUE) + eta %*% lambda + matrix(rnorm(N*J, 0, resid), nrow = N, ncol = J, byrow = TRUE)
 
     # Construct output
+
+    df <- as.data.frame(Y)
+    colnames(df) <- paste0("obs_", 1:J)
+    df$subject <- group
+
+    if(P > 0) {
+        colnames(X_loc) <- paste0("loc_", 1:P)
+        df <- cbind(df, X_loc)
+    }
+    if(Q > 0) {
+        colnames(X_sca) <- paste0("sca_", 1:Q)
+        df <- cbind(df, X_sca)
+    }
+    if(R > 0) {
+        colnames(X_bet) <- paste0("bet_", 1:R)
+        df <- cbind(df, X_bet)
+    }
+
+    J_f <- apply(lambda, 1, function(r) {
+        sum(r != 0)
+    })
+    F_ind <- matrix(0, nrow = F, ncol = J)
+    for(r in 1:F) {
+        F_ind[r,1:(J_f[r])] <- which(lambda[r,] != 0)
+    }
+
+    out <- list(params = nlist(
+                    N, J, F, K, P, Q, n, R,
+                    P_random, Q_random,
+                    P_random_ind, Q_random_ind,
+                    lambda, resid, nu,
+                    mu_beta, logsd_beta, zeta,
+                    mu_logsd_betas_cor, mu_logsd_betas_sigma,
+                    epsilon_cor,
+                    eta, eta_logsd, mu_logsd_betas_re
+                ),
+                data = nlist(
+                    N, J, F, K, P, Q, R,
+                    P_random, Q_random,
+                    P_random_ind, Q_random_ind,
+                    x_loc = X_loc,
+                    x_sca = X_sca,
+                    x_bet = X_bet,
+                    y = Y,
+                    group,
+                    J_f,
+                    F_ind,
+                    L2_pred_only = L2_pred_only,
+                    prior_only = FALSE
+                ),
+                df = df)
+
+    return(out)
 
 }
