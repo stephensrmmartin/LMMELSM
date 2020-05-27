@@ -305,7 +305,25 @@ simulate.multi.re <- function(n,
                 df = df)
     return(out)
 }
-
+##' @title Simulate data from latent uni/multidimensional MELSM
+##' @param n Integer. Number of repeated observations per group.
+##' @param K Integer. Number of groups.
+##' @param lambda Matrix (FxJ). Loading matrix.
+##' @param resid Numeric vector (J). Residual SDs.
+##' @param nu Numeric vector (J). Intercepts.
+##' @param mu_beta Matrix (PxF). Location coefficient matrix.
+##' @param logsd_beta Matrix (QxF). Scale coefficient matrix.
+##' @param P_random_ind Integer vector (P_random). Which location predictors have random slopes.
+##' @param Q_random_ind Integer vector (Q_random). Which scale predictors have random slopes.
+##' @param mu_logsd_betas_cor Matrix (Symmetric, SPD; F*2 + P_random*F + Q_random*F). Correlation matrix of random effects (slopes and intercepts, for location and scale models).
+##' @param mu_logsd_betas_sigma Numeric vector (Positive; F*2 + P_random*F + Q_random*F). RE SDs (intercepts on exponentiated scale, if zeta is specified).
+##' @param epsilon_cor Matrix (Symmetric, SPD; F). Stochastic error term correlation between factors.
+##' @param zeta Matrix (Rx[F*2 + P_random*F + Q_random*F]). Coefficient matrix for predicting RE SDs.
+##' @param X_loc Matrix (Optional; NxP). Location design matrix.
+##' @param X_sca Matrix (Optional; NxQ). Scale design matrix.
+##' @param X_bet Matrix (Optional; NxR). Between-SD design matrix.
+##' @return List of params (list), data (list), and df (data.frame).
+##' @author Stephen R. Martin
 simulate_lmmelsm <- function(n,
                              K,
                              lambda,
