@@ -196,8 +196,8 @@ d <- LMMELSM:::simulate_lmmelsm(
                                      0, 0, 0, 0, 0, .7, .7, .7, .8, .9), nrow = 2, ncol = 10, byrow = TRUE),
                    resid = rep(1, 10),
                    nu = rep(0, 10),
-                   mu_beta = matrix(c(.4, -.6), ncol = 2, nrow = 2),
-                   logsd_beta = matrix(c(.4, -.6), ncol = 2, nrow = 2),
+                   ## mu_beta = matrix(c(.4, -.6), ncol = 2, nrow = 2),
+                   ## logsd_beta = matrix(c(.4, -.6), ncol = 2, nrow = 2),
                    ## P_random_ind = c(1),
                    ## Q_random_ind = c(1),
                    mu_logsd_betas_cor = diag(1, 2*2, 2*2),
@@ -209,9 +209,12 @@ d <- LMMELSM:::simulate_lmmelsm(
 
 sOut <- melsm_latent(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5,
                           factor2 ~ obs_6 + obs_7 + obs_8 + obs_9 + obs_10,
-                          location ~ loc_1 + loc_2 | loc_1,
-                          scale ~ sca_1 + sca_2 | sca_1,
-                          between ~ bet_1 + bet_2), subject, d$df, iter = 1000)
+                          ## location ~ loc_1 + loc_2,
+                          ## location ~ loc_1 + loc_2 | loc_1,
+                          ## scale ~ sca_1 + sca_2,
+                          ## scale ~ sca_1 + sca_2 | sca_1,
+                          between ~ bet_1 + bet_2
+                          ), subject, d$df, iter = 1000)
 
 summary(sOut, pars = c("lambda", "nu", "sigma"))$summary
 summary(sOut, pars = c("mu_logsd_betas_random_sigma", "Omega_eta", "Omega_mean_logsd"))$summary
