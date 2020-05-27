@@ -318,7 +318,7 @@ simulate_lmmelsm <- function(n,
                              mu_logsd_betas_cor,
                              mu_logsd_betas_sigma,
                              epsilon_cor,
-                             zeta,
+                             zeta = NULL,
                              X_loc = NULL,
                              X_sca = NULL,
                              X_bet = NULL
