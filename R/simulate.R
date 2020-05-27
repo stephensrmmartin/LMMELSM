@@ -324,6 +324,7 @@ simulate.multi.re <- function(n,
 ##' @param X_bet Matrix (Optional; NxR). Between-SD design matrix.
 ##' @return List of params (list), data (list), and df (data.frame).
 ##' @author Stephen R. Martin
+##' @keywords internal
 simulate_lmmelsm <- function(n,
                              K,
                              lambda,
