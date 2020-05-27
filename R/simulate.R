@@ -340,12 +340,13 @@ simulate_lmmelsm <- function(n,
                              zeta = NULL,
                              X_loc = NULL,
                              X_sca = NULL,
-                             X_bet = NULL
+                             X_bet = NULL,
+                             L2_pred_only = FALSE
                              ) {
     # Restructure; If not matrix, then make matrix, assume unidimensional model.
     if(!is.matrix(lambda)) lambda <- matrix(lambda, nrow = 1)
-    if(!is.matrix(mu_beta)) mu_beta <- matrix(mu_beta, ncol = 1)
-    if(!is.matrix(logsd_beta)) logsd_beta <- matrix(logsd_beta, ncol = 1)
+    if(!is.matrix(mu_beta) & !is.null(mu_beta)) mu_beta <- matrix(mu_beta, ncol = 1)
+    if(!is.matrix(logsd_beta) & !is.null(mu_beta)) logsd_beta <- matrix(logsd_beta, ncol = 1)
 
     # Dimensions
     J <- ncol(lambda) 
@@ -390,7 +391,7 @@ simulate_lmmelsm <- function(n,
         mu_logsd_betas_sigmas <- mu_logsd_betas_sigmas * exp(X_bet_L2 %*% zeta)
     }
     #### Add RE contributions
-    for(i in 1:K) {
+    for(k in 1:K) {
         mu_logsd_betas_re[k,] <- mvrnorm(1, rep(0, num_rands), Sigma = diag(mu_logsd_betas_sigmas[k,], num_rands, num_rands) %*% mu_logsd_betas_cor %*% diag(mu_logsd_betas_sigmas[k,], num_rands, num_rands))
     }
 
