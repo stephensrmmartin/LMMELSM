@@ -303,6 +303,7 @@ simulate.multi.re <- function(n,
                     prior_only = FALSE
                 ),
                 df = df)
+    return(out)
 }
 
 simulate_lmmelsm <- function(n,
