@@ -204,7 +204,10 @@ d <- LMMELSM:::simulate_lmmelsm(
                    mu_logsd_betas_sigma = rep(.3, 2*2),
                    epsilon_cor = matrix(c(1, -.4,
                                           -.4, 1), 2, 2),
-                   zeta = matrix(c(-.4, .4), ncol = 4, nrow = 2)
+                   ## zeta = matrix(c(-.6, .6), ncol = 4, nrow = 2) # Does not work
+                   ## zeta = matrix(c(.4, 0, 0, 0), ncol = 4, nrow = 1) # Does work
+                   ## zeta = matrix(c(0, .4, 0, 0), ncol = 4, nrow = 1) # Does work.
+                   zeta = matrix(c(0, 0, .4, 0), ncol = 4, nrow = 1) # Does work.
                )
 
 sOut <- melsm_latent(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5,
@@ -213,10 +216,12 @@ sOut <- melsm_latent(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5,
                           ## location ~ loc_1 + loc_2 | loc_1,
                           ## scale ~ sca_1 + sca_2,
                           ## scale ~ sca_1 + sca_2 | sca_1,
-                          between ~ bet_1 + bet_2
+                          ## between ~ bet_1 + bet_2
+                          between ~ bet_1
                           ), subject, d$df, iter = 1000)
 
 summary(sOut, pars = c("lambda", "nu", "sigma"))$summary
 summary(sOut, pars = c("mu_logsd_betas_random_sigma", "Omega_eta", "Omega_mean_logsd"))$summary
 summary(sOut, pars = c("mu_beta","logsd_beta", "zeta"))$summary
 head(sort(summary(sOut, pars = c("mu_beta_random","logsd_beta_random"))$summary[,"Rhat"], decreasing = TRUE))
+head(sort(summary(sOut)$summary[,"Rhat"], decreasing = TRUE))
