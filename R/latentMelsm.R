@@ -205,9 +205,9 @@ melsm_latent <- function(formula, group, data, ...) {
     ## plist$scale <- plist$scale %IfNull% Formula(scale ~ 1)
     mf <- model.frame(.combine_RHS(plist), mf)
 
-    x_loc <- model.matrix(plist$location, mf)[,-1]
-    x_sca <- model.matrix(plist$scale, mf)[,-1]
-    x_bet <- model.matrix(plist$between, mf)[, -1]
+    x_loc <- model.matrix(plist$location, mf)[,-1, drop = FALSE]
+    x_sca <- model.matrix(plist$scale, mf)[,-1, drop = FALSE]
+    x_bet <- model.matrix(plist$between, mf)[, -1, drop = FALSE]
     P <- ncol(x_loc)
     Q <- ncol(x_sca)
     R <- ncol(x_bet)
