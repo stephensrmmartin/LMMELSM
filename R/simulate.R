@@ -356,6 +356,8 @@ simulate_lmmelsm <- function(n,
     R <- nrow(zeta) %IfNull% 0
     P_random <- length(P_random_ind) %IfNull% 0
     Q_random <- length(Q_random_ind) %IfNull% 0
+    P_random_ind <- P_random_ind %IfNull% array(0, dim = c(P_random))
+    Q_random_ind <- Q_random_ind %IfNull% array(0, dim = c(Q_random))
     N <- n * K
 
     # Generate groups, if not provided
@@ -430,14 +432,21 @@ simulate_lmmelsm <- function(n,
     if(P > 0) {
         colnames(X_loc) <- paste0("loc_", 1:P)
         df <- cbind(df, X_loc)
+    } else {
+        X_loc <- array(0, dim =c(N, 0))
     }
     if(Q > 0) {
         colnames(X_sca) <- paste0("sca_", 1:Q)
         df <- cbind(df, X_sca)
+    } else {
+        X_sca <- array(0, dim =c(N, 0))
     }
+
     if(R > 0) {
         colnames(X_bet) <- paste0("bet_", 1:R)
         df <- cbind(df, X_bet)
+    } else {
+        X_bet <- array(0, dim =c(N, 0))
     }
 
     J_f <- apply(lambda, 1, function(r) {
