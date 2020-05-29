@@ -187,7 +187,7 @@ head(sort(summary(sOut, pars = c("mu_beta_random","logsd_beta_random"))$summary[
 
 library(LMMELSM)
 
-set.seed(14)
+set.seed(12)
 
 d <- LMMELSM:::simulate_lmmelsm(
                    n = 50,
@@ -205,9 +205,9 @@ d <- LMMELSM:::simulate_lmmelsm(
                    epsilon_cor = matrix(c(1, -.4,
                                           -.4, 1), 2, 2),
                    ## zeta = matrix(c(-.6, .6), ncol = 4, nrow = 2) # Does not work
-                   ## zeta = matrix(c(.4, 0, 0, 0), ncol = 4, nrow = 1) # Does work
-                   ## zeta = matrix(c(0, .4, 0, 0), ncol = 4, nrow = 1) # Does work.
-                   zeta = matrix(c(0, 0, .4, 0), ncol = 4, nrow = 1) # Does work.
+                   zeta = matrix(c(.4, 0, 0, 0), ncol = 4, nrow = 1) # Does work sometimes.
+                   ## zeta = matrix(c(0, .4, 0, 0), ncol = 4, nrow = 1) # Does work sometimes.
+                   ## zeta = matrix(c(0, 0, .4, 0), ncol = 4, nrow = 1) # Does work sometimes.
                )
 
 sOut <- melsm_latent(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5,
