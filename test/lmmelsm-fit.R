@@ -204,8 +204,9 @@ d <- LMMELSM:::simulate_lmmelsm(
                    mu_logsd_betas_sigma = rep(.3, 2*2),
                    epsilon_cor = matrix(c(1, -.4,
                                           -.4, 1), 2, 2),
-                   ## zeta = matrix(c(-.6, .6), ncol = 4, nrow = 2) # Does not work
-                   zeta = matrix(c(.4, 0, 0, 0), ncol = 4, nrow = 1) # Does work sometimes.
+                   zeta = matrix(c(-.4, .4), ncol = 4, nrow = 2) # Does not work
+                   ## zeta = matrix(c(0, 0), ncol = 4, nrow = 2) # Does not work
+                   ## zeta = matrix(c(.4, 0, 0, 0), ncol = 4, nrow = 1) # Does work sometimes.
                    ## zeta = matrix(c(0, .4, 0, 0), ncol = 4, nrow = 1) # Does work sometimes.
                    ## zeta = matrix(c(0, 0, .4, 0), ncol = 4, nrow = 1) # Does work sometimes.
                )
@@ -225,3 +226,10 @@ summary(sOut, pars = c("mu_logsd_betas_random_sigma", "Omega_eta", "Omega_mean_l
 summary(sOut, pars = c("mu_beta","logsd_beta", "zeta"))$summary
 head(sort(summary(sOut, pars = c("mu_beta_random","logsd_beta_random"))$summary[,"Rhat"], decreasing = TRUE))
 head(sort(summary(sOut)$summary[,"Rhat"], decreasing = TRUE))
+
+# Testing with 'observed' etas.
+library(rstan)
+
+stan_data <- d$data
+stan_data$eta_y <- d$params$eta
+sOut <- sampling(LMMELSM:::stanmodels$lmmelsmPredObs, data = stan_data, cores = 4, iter = 1000, init = 0)
