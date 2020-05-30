@@ -47,6 +47,7 @@ melsm_latent <- function(formula, group, data, ...) {
     stan_args$chains <- dots$chains %IfNull% 4
     stan_args$iter <- dots$iter %IfNull% 2000
     stan_args$prior_only <- dots$prior_only %IfNull% FALSE
+    stan_args$init <- dots$init %IfNull% 0
     ## Remove from dots the things that are specified here
     dots[names(dots) %in% names(stan_args)] <- NULL
 
