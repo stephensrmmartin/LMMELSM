@@ -198,26 +198,27 @@ d <- LMMELSM:::simulate_lmmelsm(
                    nu = rep(0, 10),
                    mu_beta = matrix(c(.4, -.6), ncol = 2, nrow = 2),
                    logsd_beta = matrix(c(.4, -.6), ncol = 2, nrow = 2),
-                   ## P_random_ind = c(1),
-                   ## Q_random_ind = c(1),
-                   mu_logsd_betas_cor = diag(1, 2*2, 2*2),
-                   mu_logsd_betas_sigma = rep(.3, 2*2),
+                   P_random_ind = c(1),
+                   Q_random_ind = c(1),
+                   mu_logsd_betas_cor = diag(1, 2*2 + 4, 2*2 + 4),
+                   mu_logsd_betas_sigma = rep(.3, 2*2 + 4),
                    epsilon_cor = matrix(c(1, -.4,
                                           -.4, 1), 2, 2),
-                   zeta = matrix(c(-.4, .4), ncol = 4, nrow = 2), # Does not work
+                   zeta = cbind(matrix(c(-.4, .4), ncol = 4, nrow = 2), matrix(0, 2, 4))
+                   ## zeta = matrix(c(-.4, .4), ncol = 4, nrow = 2), # Does not work
                    ## zeta = matrix(c(0, 0), ncol = 4, nrow = 2) # Does not work
                    ## zeta = matrix(c(.4, 0, 0, 0), ncol = 4, nrow = 1) # Does work sometimes.
                    ## zeta = matrix(c(0, .4, 0, 0), ncol = 4, nrow = 1) # Does work sometimes.
                    ## zeta = matrix(c(0, 0, .4, 0), ncol = 4, nrow = 1) # Does work sometimes.
-                   X_bet = cbind(rep(0:1, each = 50*100/2), rep(1:0, each = 50*100/2))
+                   ## X_bet = cbind(rep(0:1, each = 50*100/2), rep(1:0, each = 50*100/2))
                )
 
 sOut <- melsm_latent(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5,
                           factor2 ~ obs_6 + obs_7 + obs_8 + obs_9 + obs_10,
-                          location ~ loc_1 + loc_2,
-                          ## location ~ loc_1 + loc_2 | loc_1,
-                          scale ~ sca_1 + sca_2,
-                          ## scale ~ sca_1 + sca_2 | sca_1,
+                          ## location ~ loc_1 + loc_2,
+                          location ~ loc_1 + loc_2 | loc_1,
+                          ## scale ~ sca_1 + sca_2,
+                          scale ~ sca_1 + sca_2 | sca_1,
                           between ~ bet_1 + bet_2
                           ## between ~ bet_1
                           ), subject, d$df, iter = 1000)
@@ -233,6 +234,6 @@ library(rstan)
 
 stan_data <- d$data
 stan_data$eta_y <- d$params$eta
-## stan_data$P_random_ind <- array(stan_data$P_random_ind, dim = 1)
-## stan_data$Q_random_ind <- array(stan_data$Q_random_ind, dim = 1)
+stan_data$P_random_ind <- array(stan_data$P_random_ind, dim = 1)
+stan_data$Q_random_ind <- array(stan_data$Q_random_ind, dim = 1)
 sOut <- sampling(LMMELSM:::stanmodels$lmmelsmPredObs, data = stan_data, cores = 4, iter = 1000, init = 0)
