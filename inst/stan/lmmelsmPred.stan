@@ -283,8 +283,9 @@ transformed parameters {
 
     }
   } else { // Compute t(L_cov) for each observation (much slower, but needed if sd varies by l1 predictor.)
+    matrix[N, F] eta_sd = exp(eta_logsd);
     for(n in 1:N) {
-      eta[n] += epsilon_z[n] * diag_pre_multiply(exp(eta_logsd[n]), epsilon_L)';
+      eta[n] += epsilon_z[n] * diag_pre_multiply(eta_sd[n], epsilon_L)';
     }
   }
   
