@@ -47,6 +47,31 @@ functions {
   }
 
   /*
+    Non-centered RE params to REs, with predicted variances for the intercepts.
+    @param matrix[K, num] z; K = groups, num = number of REs.
+    @param cholesk_factor_corr[num] L;
+    @param vector[num] sigma; RE SDs (intercept, on exp scale)
+    @param matrix[K, R] x_bet_l2; Level-2 design matrix for log-scale contributions to bet. group SDs.
+    @param matrix[R, re_intercepts] zeta; coefficient matrix.
+    @param matrix[K, num] REs;
+   */
+  matrix z_to_re_bet_intercepts(matrix z, matrix L, vector sigma, matrix x_bet_l2, matrix zeta) {
+    int re_total = cols(z);
+    int K = rows(z);
+    int re_intercepts = cols(zeta);
+    matrix[K, re_total] sigmas = (rep_vector(1.0, K) * sigma');
+    matrix[K, re_total] out;
+
+    sigmas[, 1:re_intercepts] .*= exp(x_bet_l2 * zeta);
+
+    for(k in 1:K) {
+      out[k] = z[k] * diag_pre_multiply(sigmas[k], L)';
+    }
+
+    return(out);
+  }
+
+  /*
     Convert repeated measures to subject-level dataset
     @return matrix[K, cols(l1)]; in order of 1:K, if using l1_to_l2_indices().
    */
@@ -195,14 +220,15 @@ parameters {
   vector<lower=0>[re_total] mu_logsd_betas_random_sigma; // No between-person scale model [yet]. May want to split mu_logsd from Var(random slopes).
 
   // Between-group variance model
-  matrix[R, re_total] zeta;
+  // matrix[R, re_total] zeta;
+  matrix[R, re_intercepts] zeta;
 }
 
 transformed parameters {
   matrix[F, J] lambda = lambda_mat(J, F, J_f, F_ind, lambda_est);
   matrix[K, re_total] mu_logsd_betas_random = R < 1 ?
     z_to_re(mu_logsd_betas_random_z, mu_logsd_betas_random_L, mu_logsd_betas_random_sigma) :
-    z_to_re_bet(mu_logsd_betas_random_z, mu_logsd_betas_random_L, mu_logsd_betas_random_sigma, x_bet_l2, zeta);
+    z_to_re_bet_intercepts(mu_logsd_betas_random_z, mu_logsd_betas_random_L, mu_logsd_betas_random_sigma, x_bet_l2, zeta);
   matrix[K, F] mu_random = mu_logsd_betas_random[, re_ind_mu];
   matrix[K, F] logsd_random = mu_logsd_betas_random[, re_ind_logsd];
   matrix[P_random, F] mu_beta_random[K] = mat_to_mat_array(P_random, F, mu_logsd_betas_random[, re_ind_mu_betas]); // TODO: Need to convert the F*P_random + F*Q_random vector to an K-array of P_random x F matrices.
