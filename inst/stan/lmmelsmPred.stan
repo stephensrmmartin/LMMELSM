@@ -171,17 +171,23 @@ transformed data {
   int intercept_only = P == 0 && Q == 0; // Whether intercept-only; allows quicker computations
   int lambda_total = sum(J_f);
   int l1_indices[K] = l1_to_l2_indices(K, group);
+  // Level 2 datasets, for ReVar and efficiency.
   matrix[K, P] x_loc_l2;
   matrix[K, Q] x_sca_l2;
   matrix[K, R] x_bet_l2;
+  // Number of REs
   int re_intercepts = F*2;
   int re_mu_betas = P_random*F;
   int re_logsd_betas = Q_random*F;
   int re_total = re_intercepts + re_mu_betas + re_logsd_betas;
+  // Pre-compute RE matrix indices
   int re_ind_mu[F] = seq_from_to(1, F);
   int re_ind_logsd[F] = seq_from_to(F + 1, F*2);
   int re_ind_mu_betas[re_mu_betas] = seq_from_to((F*2) + 1, (F*2) + P_random*F);
   int re_ind_logsd_betas[re_logsd_betas] = seq_from_to(F*2 + P_random*F + 1, F*2 + P_random*F + Q_random*F);
+  // Pre-extract random design matrices.
+  matrix[N, P_random] x_loc_re = x_loc[, P_random_ind];
+  matrix[N, Q_random] x_sca_re = x_sca[, Q_random_ind];
 
   // Create L2 datasets for efficiency and ReVar model
   if(L2_pred_only) {
@@ -191,8 +197,6 @@ transformed data {
   if(R > 0) {
     x_bet_l2 = l1_to_l2(x_bet, l1_indices);
   }
-
-  // Pre-compute indices
 
 }
 
@@ -247,7 +251,7 @@ transformed parameters {
   // Random effects
   if(P_random >= 1) {
     for(n in 1:N) {
-      eta[n] += x_loc[n, P_random_ind] * mu_beta_random[group[n]];
+      eta[n] += x_loc_re[n] * mu_beta_random[group[n]];
     }
   }
   // Scale Predictions
@@ -262,7 +266,7 @@ transformed parameters {
   // Random effects
   if(Q_random >= 1) {
     for(n in 1:N) {
-      eta_logsd[n] += x_sca[n, Q_random_ind] * logsd_beta_random[group[n]];
+      eta_logsd[n] += x_sca_re[n] * logsd_beta_random[group[n]];
     }
   }
 
