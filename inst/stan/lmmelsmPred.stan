@@ -149,11 +149,14 @@ transformed data {
   matrix[K, P] x_loc_l2;
   matrix[K, Q] x_sca_l2;
   matrix[K, R] x_bet_l2;
-  int re_total = F*2 + P_random*F + Q_random*F;
+  int re_intercepts = F*2;
+  int re_mu_betas = P_random*F;
+  int re_logsd_betas = Q_random*F;
+  int re_total = re_intercepts + re_mu_betas + re_logsd_betas;
   int re_ind_mu[F] = seq_from_to(1, F);
   int re_ind_logsd[F] = seq_from_to(F + 1, F*2);
-  int re_ind_mu_betas[P_random*F] = seq_from_to((F*2) + 1, (F*2) + P_random*F);
-  int re_ind_logsd_betas[Q_random*F] = seq_from_to(F*2 + P_random*F + 1, F*2 + P_random*F + Q_random*F);
+  int re_ind_mu_betas[re_mu_betas] = seq_from_to((F*2) + 1, (F*2) + P_random*F);
+  int re_ind_logsd_betas[re_logsd_betas] = seq_from_to(F*2 + P_random*F + 1, F*2 + P_random*F + Q_random*F);
 
   // Create L2 datasets for efficiency and ReVar model
   if(L2_pred_only) {
