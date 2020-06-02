@@ -94,6 +94,23 @@ functions {
     return(out);
   }
 
+  /*
+    Creates integer sequence. Useful for pre-defining indices.
+    Conceptually, same as 'from:to' in R; but Stan does not have this.
+    @param int from
+    @param int to
+    @return int[]: Array of integers in sequence defined by from, to; inclusive.
+   */
+  int[] seq_from_to(int from, int to) {
+    int length = to - from + 1;
+    int out[length];
+    for(i in 1:length) {
+      out[i] = from + i - 1;
+    }
+
+    return(out);
+  }
+
 }
 
 data {
@@ -132,7 +149,13 @@ transformed data {
   matrix[K, P] x_loc_l2;
   matrix[K, Q] x_sca_l2;
   matrix[K, R] x_bet_l2;
+  int re_total = F*2 + P_random*F + Q_random*F;
+  int re_ind_mu[F] = seq_from_to(1, F);
+  int re_ind_logsd[F] = seq_from_to(F + 1, F*2);
+  int re_ind_mu_betas[P_random*F] = seq_from_to((F*2) + 1, (F*2) + P_random*F);
+  int re_ind_logsd_betas[Q_random*F] = seq_from_to(F*2 + P_random*F + 1, F*2 + P_random*F + Q_random*F);
 
+  // Create L2 datasets for efficiency and ReVar model
   if(L2_pred_only) {
     x_loc_l2 = l1_to_l2(x_loc, l1_indices);
     x_sca_l2 = l1_to_l2(x_sca, l1_indices);
@@ -140,6 +163,9 @@ transformed data {
   if(R > 0) {
     x_bet_l2 = l1_to_l2(x_bet, l1_indices);
   }
+
+  // Pre-compute indices
+
 }
 
 parameters {
@@ -161,23 +187,23 @@ parameters {
   //// REs
 
   // For REs: We have P_random coefficients *per* factor; vector eta[ik] = X * matrix(B) + Z * matrix(u_i)
-  matrix[K, F*2 + P_random*F + Q_random*F] mu_logsd_betas_random_z; // Random intercepts for mu, logsd
-  cholesky_factor_corr[F*2 + P_random*F + Q_random*F] mu_logsd_betas_random_L;
-  vector<lower=0>[F*2 + P_random*F + Q_random*F] mu_logsd_betas_random_sigma; // No between-person scale model [yet]. May want to split mu_logsd from Var(random slopes).
+  matrix[K, re_total] mu_logsd_betas_random_z; // Random intercepts for mu, logsd
+  cholesky_factor_corr[re_total] mu_logsd_betas_random_L;
+  vector<lower=0>[re_total] mu_logsd_betas_random_sigma; // No between-person scale model [yet]. May want to split mu_logsd from Var(random slopes).
 
   // Between-group variance model
-  matrix[R, F*2 + P_random*F + Q_random*F] zeta;
+  matrix[R, re_total] zeta;
 }
 
 transformed parameters {
   matrix[F, J] lambda = lambda_mat(J, F, J_f, F_ind, lambda_est);
-  matrix[K, F*2 + P_random*F + Q_random*F] mu_logsd_betas_random = R < 1 ?
+  matrix[K, re_total] mu_logsd_betas_random = R < 1 ?
     z_to_re(mu_logsd_betas_random_z, mu_logsd_betas_random_L, mu_logsd_betas_random_sigma) :
     z_to_re_bet(mu_logsd_betas_random_z, mu_logsd_betas_random_L, mu_logsd_betas_random_sigma, x_bet_l2, zeta);
-  matrix[K, F] mu_random = mu_logsd_betas_random[, 1:F];
-  matrix[K, F] logsd_random = mu_logsd_betas_random[, (F+1):(F*2)];
-  matrix[P_random, F] mu_beta_random[K] = mat_to_mat_array(P_random, F, mu_logsd_betas_random[, (F*2 + 1):(F*2 + P_random*F)]); // TODO: Need to convert the F*P_random + F*Q_random vector to an K-array of P_random x F matrices.
-  matrix[Q_random, F] logsd_beta_random[K] = mat_to_mat_array(Q_random, F, mu_logsd_betas_random[, (F*2 + P_random*F + 1):(F*2 + P_random*F + Q_random*F)]);
+  matrix[K, F] mu_random = mu_logsd_betas_random[, re_ind_mu];
+  matrix[K, F] logsd_random = mu_logsd_betas_random[, re_ind_logsd];
+  matrix[P_random, F] mu_beta_random[K] = mat_to_mat_array(P_random, F, mu_logsd_betas_random[, re_ind_mu_betas]); // TODO: Need to convert the F*P_random + F*Q_random vector to an K-array of P_random x F matrices.
+  matrix[Q_random, F] logsd_beta_random[K] = mat_to_mat_array(Q_random, F, mu_logsd_betas_random[,re_ind_logsd_betas]);
   matrix[N, F] eta;
   matrix[N, F] eta_logsd;
   // Location Predictions
@@ -256,5 +282,5 @@ model {
 
 generated quantities {
   corr_matrix[F] Omega_eta = multiply_lower_tri_self_transpose(epsilon_L);
-  corr_matrix[F*2 + P_random*F + Q_random*F] Omega_mean_logsd = multiply_lower_tri_self_transpose(mu_logsd_betas_random_L);
+  corr_matrix[re_total] Omega_mean_logsd = multiply_lower_tri_self_transpose(mu_logsd_betas_random_L);
 }
