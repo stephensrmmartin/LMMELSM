@@ -143,9 +143,9 @@ data {
   int J; // Number of indicators
   int F; // Number of latent factors
   int K; // Number of groups
-  int P; // Number of predictors (location); RE Intercept only (for now) [Does not include intercept]
-  int Q; // Number of predictors (logsd); RE Intercept only (for now) [Does not include intercept]
-  int R; // Number of predictors (between-logsd); Fixed effects only (inherentyl a level-2 question)
+  int P; // Number of predictors (location); [Does not include intercept]
+  int Q; // Number of predictors (logsd); [Does not include intercept]
+  int R; // Number of predictors (between-logsd); Fixed effects only (inherently a level-2 question)
   int P_random; // Number of random location coefficients
   int Q_random; // Number of random scale coefficients
   int P_random_ind[P_random]; // Indices in x_loc corresponding to random location predictors
@@ -221,7 +221,7 @@ parameters {
   // For REs: We have P_random coefficients *per* factor; vector eta[ik] = X * matrix(B) + Z * matrix(u_i)
   matrix[K, re_total] mu_logsd_betas_random_z; // Random intercepts for mu, logsd
   cholesky_factor_corr[re_total] mu_logsd_betas_random_L;
-  vector<lower=0>[re_total] mu_logsd_betas_random_sigma; // No between-person scale model [yet]. May want to split mu_logsd from Var(random slopes).
+  vector<lower=0>[re_total] mu_logsd_betas_random_sigma;
 
   // Between-group variance model
   // matrix[R, re_total] zeta;
@@ -235,7 +235,7 @@ transformed parameters {
     z_to_re_bet_intercepts(mu_logsd_betas_random_z, mu_logsd_betas_random_L, mu_logsd_betas_random_sigma, x_bet_l2, zeta);
   matrix[K, F] mu_random = mu_logsd_betas_random[, re_ind_mu];
   matrix[K, F] logsd_random = mu_logsd_betas_random[, re_ind_logsd];
-  matrix[P_random, F] mu_beta_random[K] = mat_to_mat_array(P_random, F, mu_logsd_betas_random[, re_ind_mu_betas]); // TODO: Need to convert the F*P_random + F*Q_random vector to an K-array of P_random x F matrices.
+  matrix[P_random, F] mu_beta_random[K] = mat_to_mat_array(P_random, F, mu_logsd_betas_random[, re_ind_mu_betas]);
   matrix[Q_random, F] logsd_beta_random[K] = mat_to_mat_array(Q_random, F, mu_logsd_betas_random[,re_ind_logsd_betas]);
   matrix[N, F] eta;
   matrix[N, F] eta_logsd;
