@@ -47,6 +47,7 @@ melsm_latent <- function(formula, group, data, ...) {
     stan_args$chains <- dots$chains %IfNull% 4
     stan_args$iter <- dots$iter %IfNull% 2000
     stan_args$prior_only <- dots$prior_only %IfNull% FALSE
+    stan_args$init <- dots$init %IfNull% 0
     ## Remove from dots the things that are specified here
     dots[names(dots) %in% names(stan_args)] <- NULL
 
@@ -64,6 +65,7 @@ melsm_latent <- function(formula, group, data, ...) {
               "eta_logsd",
               "mu_beta",
               "logsd_beta",
+              "zeta",
               "mu_random",
               "logsd_random",
               "mu_beta_random",
@@ -103,10 +105,10 @@ melsm_latent <- function(formula, group, data, ...) {
     names(flist) <- sapply(flist, .get_LHS)
 
     # Separate location/scale formulas from measurement formulas.
-    ## mlist: List of measurement fact formulas
-    ## plist: List of predictive location/scale formulas
+    ## mlist: List of measurement factor formulas
+    ## plist: List of predictive location/scale/between formulas
     ## flist: All formulas (good for model framing)
-    plist <- list(location = Formula(location ~ 1), scale = Formula(scale ~ 1))
+    plist <- list(location = Formula(location ~ 1), scale = Formula(scale ~ 1), between = Formula(between ~ 1))
     which_loc_sca <- .which_location_scale(flist, reduce = TRUE)
     plist[names(which_loc_sca)] <- flist[which_loc_sca]
     mlist <- flist
@@ -204,10 +206,12 @@ melsm_latent <- function(formula, group, data, ...) {
     ## plist$scale <- plist$scale %IfNull% Formula(scale ~ 1)
     mf <- model.frame(.combine_RHS(plist), mf)
 
-    x_loc <- model.matrix(plist$location, mf)[,-1]
-    x_sca <- model.matrix(plist$scale, mf)[,-1]
+    x_loc <- model.matrix(plist$location, mf)[,-1, drop = FALSE]
+    x_sca <- model.matrix(plist$scale, mf)[,-1, drop = FALSE]
+    x_bet <- model.matrix(plist$between, mf)[, -1, drop = FALSE]
     P <- ncol(x_loc)
     Q <- ncol(x_sca)
+    R <- ncol(x_bet)
 
     if(length(plist$location)[2] == 2) {
         P_random_RHS <- .get_RHS(formula(plist$location, rhs = 2))
@@ -231,18 +235,21 @@ melsm_latent <- function(formula, group, data, ...) {
 
     # Specify efficiency options
     ## intercept_only <- P == 0 & Q == 0
-    L2_pred_only <- .detect_L2_only(mf, group)
+    mf_loc_sca <- model.frame(.combine_RHS(plist[c("location","scale")]), mf)
+    L2_pred_only <- .detect_L2_only(mf_loc_sca, group)
 
 
     out <- nlist(L2_pred_only,
                  P,
                  Q,
+                 R,
                  P_random,
                  Q_random,
                  P_random_ind,
                  Q_random_ind,
                  x_loc,
-                 x_sca
+                 x_sca,
+                 x_bet
                  )
     return(out)
 }
@@ -338,17 +345,21 @@ melsm_latent <- function(formula, group, data, ...) {
 ##' @keywords internal
 .which_location_scale <- function(flist, reduce = TRUE) {
     lhs_names <- tolower(lapply(flist, .get_LHS))
-    loc_scale <- match(c("location", "scale"), lhs_names)
-    names(loc_scale) <- c("location", "scale")
+    loc_scale <- match(c("location", "scale", "between"), lhs_names)
+    names(loc_scale) <- c("location", "scale", "between")
 
     # Check whether multiple location/scales exist
     which_lhs_match_location <- lhs_names %in% c("location")
     which_lhs_match_scale <- lhs_names %in% c("scale")
+    which_lhs_match_between <- lhs_names %in% c("between")
     if(sum(which_lhs_match_location) > 1) {
         stop("Multiple formulas for 'location' provided.")
     }
     if(sum(which_lhs_match_scale) > 1) {
         stop("Multiple formulas for 'scale' provided.")
+    }
+    if(sum(which_lhs_match_between) > 1) {
+        stop("Multiple formulas for 'between' provided.")
     }
 
     if(reduce) {

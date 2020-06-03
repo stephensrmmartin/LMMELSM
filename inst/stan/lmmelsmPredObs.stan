@@ -47,31 +47,6 @@ functions {
   }
 
   /*
-    Non-centered RE params to REs, with predicted variances for the intercepts.
-    @param matrix[K, num] z; K = groups, num = number of REs.
-    @param cholesk_factor_corr[num] L;
-    @param vector[num] sigma; RE SDs (intercept, on exp scale)
-    @param matrix[K, R] x_bet_l2; Level-2 design matrix for log-scale contributions to bet. group SDs.
-    @param matrix[R, re_intercepts] zeta; coefficient matrix.
-    @param matrix[K, num] REs;
-   */
-  matrix z_to_re_bet_intercepts(matrix z, matrix L, vector sigma, matrix x_bet_l2, matrix zeta) {
-    int re_total = cols(z);
-    int K = rows(z);
-    int re_intercepts = cols(zeta);
-    matrix[K, re_total] sigmas = (rep_vector(1.0, K) * sigma');
-    matrix[K, re_total] out;
-
-    sigmas[, 1:re_intercepts] .*= exp(x_bet_l2 * zeta);
-
-    for(k in 1:K) {
-      out[k] = z[k] * diag_pre_multiply(sigmas[k], L)';
-    }
-
-    return(out);
-  }
-
-  /*
     Convert repeated measures to subject-level dataset
     @return matrix[K, cols(l1)]; in order of 1:K, if using l1_to_l2_indices().
    */
@@ -119,23 +94,6 @@ functions {
     return(out);
   }
 
-  /*
-    Creates integer sequence. Useful for pre-defining indices.
-    Conceptually, same as 'from:to' in R; but Stan does not have this.
-    @param int from
-    @param int to
-    @return int[]: Array of integers in sequence defined by from, to; inclusive.
-   */
-  int[] seq_from_to(int from, int to) {
-    int length = to - from + 1;
-    int out[length];
-    for(i in 1:length) {
-      out[i] = from + i - 1;
-    }
-
-    return(out);
-  }
-
 }
 
 data {
@@ -143,9 +101,9 @@ data {
   int J; // Number of indicators
   int F; // Number of latent factors
   int K; // Number of groups
-  int P; // Number of predictors (location); [Does not include intercept]
-  int Q; // Number of predictors (logsd); [Does not include intercept]
-  int R; // Number of predictors (between-logsd); Fixed effects only (inherently a level-2 question)
+  int P; // Number of predictors (location); RE Intercept only (for now) [Does not include intercept]
+  int Q; // Number of predictors (logsd); RE Intercept only (for now) [Does not include intercept]
+  int R; // Number of predictors (between-logsd); Fixed effects only (inherentyl a level-2 question)
   int P_random; // Number of random location coefficients
   int Q_random; // Number of random scale coefficients
   int P_random_ind[P_random]; // Indices in x_loc corresponding to random location predictors
@@ -157,9 +115,10 @@ data {
   matrix[N, R] x_bet; // Between predictors
 
   // Indicators
-  int J_f[F]; // Number of indicators for each factor
-  int F_ind[F, J]; // Indicator indices.
-  matrix[N, J] y; // Indicator data.
+  // int J_f[F]; // Number of indicators for each factor
+  // int F_ind[F, J]; // Indicator indices.
+  // matrix[N, J] y; // Indicator data.
+  matrix[N, F] eta_y;
 
   // Options
   int<lower=0, upper=1> prior_only; // Whether to sample from prior only
@@ -169,27 +128,12 @@ data {
 
 transformed data {
   int intercept_only = P == 0 && Q == 0; // Whether intercept-only; allows quicker computations
-  int lambda_total = sum(J_f);
+  // int lambda_total = sum(J_f);
   int l1_indices[K] = l1_to_l2_indices(K, group);
-  // Level 2 datasets, for ReVar and efficiency.
   matrix[K, P] x_loc_l2;
   matrix[K, Q] x_sca_l2;
   matrix[K, R] x_bet_l2;
-  // Number of REs
-  int re_intercepts = F*2;
-  int re_mu_betas = P_random*F;
-  int re_logsd_betas = Q_random*F;
-  int re_total = re_intercepts + re_mu_betas + re_logsd_betas;
-  // Pre-compute RE matrix indices
-  int re_ind_mu[F] = seq_from_to(1, F);
-  int re_ind_logsd[F] = seq_from_to(F + 1, F*2);
-  int re_ind_mu_betas[re_mu_betas] = seq_from_to((F*2) + 1, (F*2) + P_random*F);
-  int re_ind_logsd_betas[re_logsd_betas] = seq_from_to(F*2 + P_random*F + 1, F*2 + P_random*F + Q_random*F);
-  // Pre-extract random design matrices.
-  matrix[N, P_random] x_loc_re = x_loc[, P_random_ind];
-  matrix[N, Q_random] x_sca_re = x_sca[, Q_random_ind];
 
-  // Create L2 datasets for efficiency and ReVar model
   if(L2_pred_only) {
     x_loc_l2 = l1_to_l2(x_loc, l1_indices);
     x_sca_l2 = l1_to_l2(x_sca, l1_indices);
@@ -197,14 +141,13 @@ transformed data {
   if(R > 0) {
     x_bet_l2 = l1_to_l2(x_bet, l1_indices);
   }
-
 }
 
 parameters {
   // Measurement model
-  row_vector[J] nu;
-  vector<lower=0>[lambda_total] lambda_est; // Assumes all loadings positive (including cross-loadings!)
-  row_vector<lower=0>[J] sigma; // No error var scale model.
+  // row_vector[J] nu;
+  // vector<lower=0>[lambda_total] lambda_est; // Assumes all loadings positive (including cross-loadings!)
+  // row_vector<lower=0>[J] sigma; // No error var scale model.
 
   // Structural model
 
@@ -212,31 +155,30 @@ parameters {
   matrix[P, F] mu_beta; // Fixed multivariate coefficients (Not including intercept)
 
   //// Scale model: eta[ik] = mu[ik] + epsilon[ik]; epsilon[ik] ~ mvn(0, f(L, logsd[ik])); logsd[ik] = G[i,0] + z[ik]G;
-  matrix[N, F] epsilon_z; // Stochastic latent error
+  // matrix[N, F] epsilon_z; // Stochastic latent error
   matrix[Q, F] logsd_beta; // Fixed multivariate coefficients for scale model (Not including intercept)
   cholesky_factor_corr[F] epsilon_L; // Assumed equal across K.
 
   //// REs
 
   // For REs: We have P_random coefficients *per* factor; vector eta[ik] = X * matrix(B) + Z * matrix(u_i)
-  matrix[K, re_total] mu_logsd_betas_random_z; // Random intercepts for mu, logsd
-  cholesky_factor_corr[re_total] mu_logsd_betas_random_L;
-  vector<lower=0>[re_total] mu_logsd_betas_random_sigma;
+  matrix[K, F*2 + P_random*F + Q_random*F] mu_logsd_betas_random_z; // Random intercepts for mu, logsd
+  cholesky_factor_corr[F*2 + P_random*F + Q_random*F] mu_logsd_betas_random_L;
+  vector<lower=0>[F*2 + P_random*F + Q_random*F] mu_logsd_betas_random_sigma; // No between-person scale model [yet]. May want to split mu_logsd from Var(random slopes).
 
   // Between-group variance model
-  // matrix[R, re_total] zeta;
-  matrix[R, re_intercepts] zeta;
+  matrix[R, F*2 + P_random*F + Q_random*F] zeta;
 }
 
 transformed parameters {
-  matrix[F, J] lambda = lambda_mat(J, F, J_f, F_ind, lambda_est);
-  matrix[K, re_total] mu_logsd_betas_random = R < 1 ?
+  // matrix[F, J] lambda = lambda_mat(J, F, J_f, F_ind, lambda_est);
+  matrix[K, F*2 + P_random*F + Q_random*F] mu_logsd_betas_random = R < 1 ?
     z_to_re(mu_logsd_betas_random_z, mu_logsd_betas_random_L, mu_logsd_betas_random_sigma) :
-    z_to_re_bet_intercepts(mu_logsd_betas_random_z, mu_logsd_betas_random_L, mu_logsd_betas_random_sigma, x_bet_l2, zeta);
-  matrix[K, F] mu_random = mu_logsd_betas_random[, re_ind_mu];
-  matrix[K, F] logsd_random = mu_logsd_betas_random[, re_ind_logsd];
-  matrix[P_random, F] mu_beta_random[K] = mat_to_mat_array(P_random, F, mu_logsd_betas_random[, re_ind_mu_betas]);
-  matrix[Q_random, F] logsd_beta_random[K] = mat_to_mat_array(Q_random, F, mu_logsd_betas_random[,re_ind_logsd_betas]);
+    z_to_re_bet(mu_logsd_betas_random_z, mu_logsd_betas_random_L, mu_logsd_betas_random_sigma, x_bet_l2, zeta);
+  matrix[K, F] mu_random = mu_logsd_betas_random[, 1:F];
+  matrix[K, F] logsd_random = mu_logsd_betas_random[, (F+1):(F*2)];
+  matrix[P_random, F] mu_beta_random[K] = mat_to_mat_array(P_random, F, mu_logsd_betas_random[, (F*2 + 1):(F*2 + P_random*F)]); // TODO: Need to convert the F*P_random + F*Q_random vector to an K-array of P_random x F matrices.
+  matrix[Q_random, F] logsd_beta_random[K] = mat_to_mat_array(Q_random, F, mu_logsd_betas_random[, (F*2 + P_random*F + 1):(F*2 + P_random*F + Q_random*F)]);
   matrix[N, F] eta;
   matrix[N, F] eta_logsd;
   // Location Predictions
@@ -251,7 +193,7 @@ transformed parameters {
   // Random effects
   if(P_random >= 1) {
     for(n in 1:N) {
-      eta[n] += x_loc_re[n] * mu_beta_random[group[n]];
+      eta[n] += x_loc[n, P_random_ind] * mu_beta_random[group[n]];
     }
   }
   // Scale Predictions
@@ -266,55 +208,58 @@ transformed parameters {
   // Random effects
   if(Q_random >= 1) {
     for(n in 1:N) {
-      eta_logsd[n] += x_sca_re[n] * logsd_beta_random[group[n]];
+      eta_logsd[n] += x_sca[n, Q_random_ind] * logsd_beta_random[group[n]];
     }
   }
 
   // Stochastic realizations
-  if(L2_pred_only || intercept_only) { // Compute t(L_cov) for each k.
-    {
-      matrix[F, F] epsilon_cov_U[K];
-      for(k in 1:K) {
-	epsilon_cov_U[k] = (diag_pre_multiply(exp(eta_logsd[l1_indices[k]]), epsilon_L))';
-      }
-      for(n in 1:N) {
-	eta[n] += epsilon_z[n] * epsilon_cov_U[group[n]];
-      }
+  // if(L2_pred_only || intercept_only) { // Compute t(L_cov) for each k.
+  //   {
+  //     matrix[F, F] epsilon_cov_U[K];
+  //     for(k in 1:K) {
+  // 	epsilon_cov_U[k] = (diag_pre_multiply(exp(eta_logsd[l1_indices[k]]), epsilon_L))';
+  //     }
+  //     for(n in 1:N) {
+  // 	eta[n] += epsilon_z[n] * epsilon_cov_U[group[n]];
+  //     }
 
-    }
-  } else { // Compute t(L_cov) for each observation (much slower, but needed if sd varies by l1 predictor.)
-    matrix[N, F] eta_sd = exp(eta_logsd);
-    for(n in 1:N) {
-      eta[n] += epsilon_z[n] * diag_pre_multiply(eta_sd[n], epsilon_L)';
-    }
-  }
+  //   }
+  // } else { // Compute t(L_cov) for each observation (much slower, but needed if sd varies by l1 predictor.)
+  //   for(n in 1:N) {
+  //     eta[n] += epsilon_z[n] * diag_pre_multiply(exp(eta_logsd[n]), epsilon_L)';
+  //   }
+  // }
   
 }
 
 model {
 
   // Priors
-  nu ~ std_normal();
-  lambda_est ~ std_normal();
-  sigma ~ std_normal();
+  // nu ~ std_normal();
+  // lambda_est ~ std_normal();
+  // sigma ~ std_normal();
 
   to_vector(zeta) ~ std_normal();
   to_vector(mu_beta) ~ std_normal();
   to_vector(logsd_beta) ~ std_normal();
-  to_vector(epsilon_z) ~ std_normal();
+  // to_vector(epsilon_z) ~ std_normal();
   epsilon_L ~ lkj_corr_cholesky(1);
   to_vector(mu_logsd_betas_random_z) ~ std_normal();
   mu_logsd_betas_random_L ~ lkj_corr_cholesky(1);
   mu_logsd_betas_random_sigma ~ std_normal();
 
   if(!prior_only){
-    for(j in 1:J) {
-      y[,j] ~ normal_id_glm(eta, nu[j], lambda[,j], sigma[j]);
+    for(n in 1:N) {
+      eta_y[n,] ~ multi_normal_cholesky(eta[n,], diag_pre_multiply(exp(eta_logsd[n,]), epsilon_L));
+      // eta_y[n,] ~ multi_normal_cholesky(eta[n,], epsilon_L);
     }
+    // for(j in 1:J) {
+    //   y[,j] ~ normal_id_glm(eta, nu[j], lambda[,j], sigma[j]);
+    // }
   }
 }
 
 generated quantities {
   corr_matrix[F] Omega_eta = multiply_lower_tri_self_transpose(epsilon_L);
-  corr_matrix[re_total] Omega_mean_logsd = multiply_lower_tri_self_transpose(mu_logsd_betas_random_L);
+  corr_matrix[F*2 + P_random*F + Q_random*F] Omega_mean_logsd = multiply_lower_tri_self_transpose(mu_logsd_betas_random_L);
 }
