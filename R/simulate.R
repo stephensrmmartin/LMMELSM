@@ -322,6 +322,7 @@ simulate.multi.re <- function(n,
 ##' @param X_loc Matrix (Optional; NxP). Location design matrix.
 ##' @param X_sca Matrix (Optional; NxQ). Scale design matrix.
 ##' @param X_bet Matrix (Optional; NxR). Between-SD design matrix.
+##' @param L2_pred_only Logical. Whether predictors should be group-level (TRUE) or observation level (FALSE).
 ##' @return List of params (list), data (list), and df (data.frame).
 ##' @author Stephen R. Martin
 ##' @keywords internal

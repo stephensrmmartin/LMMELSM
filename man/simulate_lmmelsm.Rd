@@ -20,7 +20,8 @@ simulate_lmmelsm(
   zeta = NULL,
   X_loc = NULL,
   X_sca = NULL,
-  X_bet = NULL
+  X_bet = NULL,
+  L2_pred_only = FALSE
 )
 }
 \arguments{
@@ -55,6 +56,8 @@ simulate_lmmelsm(
 \item{X_sca}{Matrix (Optional; NxQ). Scale design matrix.}
 
 \item{X_bet}{Matrix (Optional; NxR). Between-SD design matrix.}
+
+\item{L2_pred_only}{Logical. Whether predictors should be group-level (TRUE) or observation level (FALSE).}
 }
 \value{
 List of params (list), data (list), and df (data.frame).
