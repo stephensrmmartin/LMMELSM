@@ -54,3 +54,9 @@ nlist <- function(...) {
 
     return(out)
 }
+
+.prob_to_interval <- function(p) {
+    low <- (1 - p) / 2
+    high <- 1 - low
+    return(c(low, high))
+}
