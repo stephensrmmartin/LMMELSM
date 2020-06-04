@@ -16,7 +16,7 @@ melsm_latent(formula, group, data, ...)
 \item{...}{Options passed onto \code{\link[rstan]{sampling}}}
 }
 \value{
-melsm_latent object.
+lmmelsm object.
 }
 \description{
 Fits a MELSM on latent variables.

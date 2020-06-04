@@ -30,7 +30,7 @@
 ##' @param group Raw grouping variable name (not character).
 ##' @param data Data frame.
 ##' @param ... Options passed onto \code{\link[rstan]{sampling}}
-##' @return melsm_latent object.
+##' @return lmmelsm object.
 ##' @author Stephen R. Martin
 ##' @import rstan
 ##' @importFrom parallel detectCores
