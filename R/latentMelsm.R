@@ -77,7 +77,14 @@ melsm_latent <- function(formula, group, data, ...) {
 
     sOut <- do.call(sampling, c(stan_args, dots))
 
-    return(sOut)
+    out <- list(fit = sOut,
+                meta = d$meta,
+                stan_data = d$stan_data
+                )
+
+    class(out) <- "lmmelsm"
+
+    return(out)
 
 }
 
