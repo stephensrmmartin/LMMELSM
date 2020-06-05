@@ -165,6 +165,7 @@ melsm_latent <- function(formula, group, data, ...) {
     out$meta$indicator_spec$fname <- mlistNames$factor
     out$meta$indicator_spec$iname <- mlistNames$indicator
     out$meta$indicator_spec$mname <- colnames(indicator_spec$y)
+    out$meta$indicator_spec$mlist <- mlist
     out$stan_data <- c(out$stan_data, indicator_spec)
 
     # Predictor matrices
@@ -172,6 +173,7 @@ melsm_latent <- function(formula, group, data, ...) {
     plistNames <- .get_formula_names(plist)
     out$meta$pred_spec <- pred_spec
     out$meta$pred_spec$pname <- plistNames$indicator
+    out$meta$pred_spec$plist <- plist
     out$stan_data <- c(out$stan_data, pred_spec)
 
     # Misc
