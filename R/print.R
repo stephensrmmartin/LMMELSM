@@ -90,7 +90,12 @@ print.summary.lmmelsm <- function(x, ...) {
     string <- Reduce(paste0, deparse(f))
     return(string)
 }
-
+##' @title Gets elapsed time.
+##' @param sOut lmmelsm object.
+##' @return Numeric.
+##' @author Stephen R. Martin
+##' @importFrom rstan get_elapsed_time
+##' @keywords internal
 .get_elapsed_time <- function(sOut) {
     times <- rstan::get_elapsed_time(sOut$fit)
     out <- max(rowSums(times))
