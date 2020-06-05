@@ -35,7 +35,7 @@
 print.lmmelsm <- function(x, ...) {
     .sep()
 
-    cat("Estimated on:")
+    cat("Estimated on: ")
     cat(x$fit@date)
     .newline()
     cat("Elapsed time (seconds): ")
@@ -46,7 +46,7 @@ print.lmmelsm <- function(x, ...) {
     cat("Model specification:")
     .newline(2)
 
-    cat("Measurement model")
+    cat("Measurement model:")
     .newline()
     lapply(x$meta$indicator_spec$mlist, function(f) {
         cat(.print.formula(f))
