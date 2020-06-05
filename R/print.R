@@ -86,6 +86,8 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     out$meta$digits <- dots$digits %IfNull% 3
 
     # TODO: Get diagnostics (Rhats, divergences)
+    # TODO: Consider: Restructure these as [item/predictor, cols, factor], and name dimensions.
+    ## Similar to omegad; makes it easier to print by factor, and to subset.
 
     # Measurement model.
     out$summary$lambda <- .summarize(object, pars = "lambda", prob = prob)
