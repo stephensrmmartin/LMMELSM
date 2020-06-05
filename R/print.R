@@ -26,7 +26,7 @@
     cat("\t")
 }
 ##' Print method for lmmelsm objects.
-##' @title 
+##' @title Print method for lmmelsm objects.
 ##' @param x lmmelsm object.
 ##' @param ... Not used.
 ##' @return NULL.

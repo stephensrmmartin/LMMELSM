@@ -2,7 +2,7 @@
 % Please edit documentation in R/print.R
 \name{print.lmmelsm}
 \alias{print.lmmelsm}
-\title{}
+\title{Print method for lmmelsm objects.}
 \usage{
 \method{print}{lmmelsm}(x, ...)
 }
