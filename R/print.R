@@ -85,14 +85,21 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     out <- list(meta = object$meta, summary = list())
     out$meta$digits <- dots$digits %IfNull% 3
 
+    ind_names <- out$meta$indicator_spec$mname
+    fnames <- unlist(out$meta$indicator_spec$fname)
+
     # TODO: Get diagnostics (Rhats, divergences)
     # TODO: Consider: Restructure these as [item/predictor, cols, factor], and name dimensions.
     ## Similar to omegad; makes it easier to print by factor, and to subset.
+    ## Or make them 'tidy'
 
     # Measurement model.
     out$summary$lambda <- .summarize(object, pars = "lambda", prob = prob)
     out$summary$sigma <- .summarize(object, pars = "sigma", prob = prob)
     out$summary$nu <- .summarize(object, pars = "nu", prob = prob)
+
+    ## Restructure
+    out$summary$lambda <- .tidy_summary(out$summary$lambda, c("factor", "item"), fnames, ind_names)
 
     # RE SDs.
     out$summary$mu_logsd_betas_random_sigma <- .summarize(object, pars = "mu_logsd_betas_random_sigma", prob = prob)
@@ -168,6 +175,42 @@ print.summary.lmmelsm <- function(x, ...) {
         return(out)
     }
     samps.sum <- t(apply(samps, 2, fun))
+    samps.sum <- as.data.frame(samps.sum)
 
     return(samps.sum)
+}
+##' @title Convert stan par-string to numeric columns.
+##' @param x String. E.g., "lambda[1,2]"
+##' @param labs Character vector (Optional). If supplied, provides the colnames for the matrix.
+##' @return Numeric matrix.
+##' @author Stephen R. Martin
+##' @keywords internal
+.pars_to_indices <- function(x, labs = NULL) {
+    # inner brackets
+    ib <- gsub(".*\\[(.*)\\]", replacement = "\\1", x)
+    sep <- strsplit(ib, split = ",")
+    num <- lapply(sep, as.numeric)
+    inds <- do.call(rbind, num)
+
+    if(!is.null(labs)) { # Apply labels to dimensions.
+        colnames(inds) <- labs
+    } else { # Label them row, col, arr_1 ... arr_10
+        colnames(inds) <- c("row", "col", paste0("arr_", 1:(ncol(inds) - 2)))[1:ncol(inds)]
+    }
+    
+    return(inds)
+}
+
+.tidy_summary <- function(x, labs = NULL, ...) {
+    dots <- list(...)
+    n_relabel <- length(dots)
+    
+    inds <- .pars_to_indices(rownames(x), labs = labs)
+    inds <- as.data.frame(inds)
+    for(i in 1:n_relabel) {
+        inds[,i] <- dots[[i]][inds[,i]]
+    }
+
+    out <- (cbind(inds, x))
+    return(out)
 }
