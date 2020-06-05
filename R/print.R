@@ -78,12 +78,53 @@ print.lmmelsm <- function(x, ...) {
     }
 }
 
-summary.lmmelsm <- function(object, ...) {
-    
-}
+summary.lmmelsm <- function(object, prob = .95, ...) {
 
+    dots <- list(...)
+    # Define basic structure.
+    out <- list(meta = object$meta, summary = list())
+    out$meta$digits <- dots$digits %IfNull% 3
+
+    # TODO: Get diagnostics (Rhats, divergences)
+
+    # Measurement model.
+    out$summary$lambda <- .summarize(object, pars = "lambda", prob = prob)
+    out$summary$sigma <- .summarize(object, pars = "sigma", prob = prob)
+    out$summary$nu <- .summarize(object, pars = "nu", prob = prob)
+
+    # RE SDs.
+    out$summary$mu_logsd_betas_random_sigma <- .summarize(object, pars = "mu_logsd_betas_random_sigma", prob = prob)
+    out$summary$Omega_mean_logsd <- .summarize(object, pars = "Omega_mean_logsd", prob = prob)
+
+    # Location predictors
+    out$summary$mu_beta <- .summarize(object, pars = "mu_beta", prob = prob)
+
+    # Scale predictors
+    out$summary$logsd_beta <- .summarize(object, pars = "logsd_beta", prob = prob)
+
+    # L2 scale predictors
+    out$summary$zeta <- .summarize(object, pars = "zeta", prob = prob)
+
+    # Ranefs
+    out$summary$mu_random <- .summarize(object, pars = "mu_random", prob = prob)
+    out$summary$logsd_random <- .summarize(object, pars = "logsd_random", prob = prob)
+    out$summary$mu_beta_random <- .summarize(object, pars = "mu_beta_random", prob = prob)
+    out$summary$logsd_beta_random <- .summarize(object, pars = "logsd_beta_random", prob = prob)
+
+    # Eta correlations
+    out$summary$Omega_eta <- .summarize(object, pars = "Omega_eta", prob = prob)
+
+    class(out) <- "summary.lmmelsm"
+    return(out)
+}
+##' @title Print method for summary.lmmelsm objects.
+##' @param x summary.lmmelsm object.
+##' @param ... Not used.
+##' @return 
+##' @author Stephen Martin
 print.summary.lmmelsm <- function(x, ...) {
-    
+    dots <- list(...)
+    digits <- dots$digits %IfNull% x$meta$digits
 }
 
 .print.formula <- function(f) {
@@ -101,4 +142,30 @@ print.summary.lmmelsm <- function(x, ...) {
     out <- max(rowSums(times))
 
     return(out)
+}
+##' Computes posterior summaries.
+##'
+##' @title Compute posterior summaries.
+##' @param lmmelsm lmmelsm object.
+##' @param pars Char vector. Which stan param to summarize.
+##' @param prob Numeric (Default: .95; [0 - 1]). The desired mass to contain within the CrI.
+##' @return Matrix.
+##' @author Stephen R. Martin
+##' @keywords internal
+.summarize <- function(lmmelsm, pars, prob = .95) {
+    samps <- as.matrix(lmmelsm$fit, pars = pars)
+    probs <- .prob_to_interval(prob)
+    fun <- function(col) {
+        m <- mean(col)
+        mdn <- quantile(col, probs = .5)
+        sd <- sd(col)
+        ci <- quantile(col, probs = probs)
+        names(ci) <- paste0("Q", probs * 100)
+        names(mdn) <- "Median"
+        out <- c(Mean = m, mdn, SD = sd, ci)
+        return(out)
+    }
+    samps.sum <- t(apply(samps, 2, fun))
+
+    return(samps.sum)
 }
