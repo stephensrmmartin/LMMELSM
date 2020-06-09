@@ -94,81 +94,174 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     ## Or make them 'tidy'
 
     # Measurement model.
-    out$summary$lambda <- .summarize(object, pars = "lambda", prob = prob)
-    out$summary$sigma <- .summarize(object, pars = "sigma", prob = prob)
-    out$summary$nu <- .summarize(object, pars = "nu", prob = prob)
+    out$summary[c("lambda", "sigma", "nu")] <- .summary_measurement(object, prob)
 
-    ## Restructure
-    out$summary$lambda <- .tidy_summary(out$summary$lambda, c("factor", "item"), fnames, ind_names)
-    out$summary$sigma <- .tidy_summary(out$summary$sigma, "item", ind_names)
-    out$summary$nu <- .tidy_summary(out$summary$nu, "item", ind_names)
+    # Random effects
+    out$summary[c("mu_logsd_betas_random_sigma",
+                  "Omega_mean_logsd",
+                  "mu_random",
+                  "logsd_random",
+                  "mu_beta_random",
+                  "logsd_beta_random")] <- .summary_ranef(object, prob)
 
-    # RE SDs.
-    out$summary$mu_logsd_betas_random_sigma <- .summarize(object, pars = "mu_logsd_betas_random_sigma", prob = prob)
-    out$summary$Omega_mean_logsd <- .summarize(object, pars = "Omega_mean_logsd", prob = prob)
-
-    ## Restructure
-    ### Get factor-param names for each RE.
-    pnames <- out$meta$pred_spec$pname
-    re_names <- paste0(fnames, "MAGICSEP", rep(c("mu", "logsd"), each = length(fnames)))
-    re_total <- with(out$meta, 2 * indicator_spec$F + 2 * pred_spec$P_random + 2 * pred_spec$Q_random)
-    if(out$meta$pred_spec$P_random > 0) { # If RE location slopes
-        re_names <- c(re_names, paste0(rep(fnames, each = out$meta$pred_spec$P_random), "MAGICSEP", pnames$location[out$meta$pred_spec$P_random_ind]))
-    }
-    if(out$meta$pred_spec$Q_random > 0) { # IF RE scale slopes
-        re_names <- c(re_names, paste0(rep(fnames, each = out$meta$pred_spec$Q_random), "MAGICSEP", pnames$scale[out$meta$pred_spec$Q_random_ind]))
-    }
-    re_int_names <- re_names[1:(2 * out$meta$indicator_spec$F)]
-    re_slope_names <- re_names[(2 * out$meta$indicator_spec$F + 1):re_total]
-
-    ### Restructure them
-    out$summary$mu_logsd_betas_random_sigma <- .tidy_summary(out$summary$mu_logsd_betas_random_sigma, "param", re_names)
-    out$summary$Omega_mean_logsd <- .tidy_summary(out$summary$Omega_mean_logsd, c("row", "col"), re_names, re_names)
-    ## Split MAGICSEP'd names into columns.
-    out$summary$mu_logsd_betas_random_sigma[, c("factor", "param")] <- .magicsep(out$summary$mu_logsd_betas_random_sigma[, "param"], c("factor", "param"))
-
-    out$summary$Omega_mean_logsd[, c("row_factor", "row_param")] <- .magicsep(out$summary$Omega_mean_logsd[, "row"], c("row_factor", "row_param"))
-    out$summary$Omega_mean_logsd[, c("col_factor", "col_param")] <- .magicsep(out$summary$Omega_mean_logsd[, "col"], c("col_factor", "col_param"))
-    out$summary$Omega_mean_logsd[, c("row", "col")] <- NULL
-    out$summary$Omega_mean_logsd <- out$summary$Omega_mean_logsd[.full_to_lower_tri(re_total), ]
-
-    # Location predictors
-    out$summary$mu_beta <- .summarize(object, pars = "mu_beta", prob = prob)
-    out$summary$mu_beta <- .tidy_summary(out$summary$mu_beta, c("predictor", "factor"), pnames$location, fnames)
-
-    # Scale predictors
-    out$summary$logsd_beta <- .summarize(object, pars = "logsd_beta", prob = prob)
-    out$summary$logsd_beta <- .tidy_summary(out$summary$logsd_beta, c("predictor", "factor"), pnames$scale, fnames)
+    # Fixed effects
+    out$summary[c("mu_beta", "logsd_beta")] <- .summary_fixef(object, prob)
 
     # L2 scale predictors
-    out$summary$zeta <- .summarize(object, pars = "zeta", prob = prob)
-    out$summary$zeta <- .tidy_summary(out$summary$zeta, c("predictor", "param"), pnames$between, re_int_names) # RE intercepts only
-    out$summary$zeta[, c("factor", "param")] <- .magicsep(out$summary$zeta[, "param"], c("factor", "param"))
-
-    # Ranefs
-    out$summary$mu_random <- .summarize(object, pars = "mu_random", prob = prob)
-    out$summary$logsd_random <- .summarize(object, pars = "logsd_random", prob = prob)
-    out$summary$mu_beta_random <- .summarize(object, pars = "mu_beta_random", prob = prob)
-    out$summary$logsd_beta_random <- .summarize(object, pars = "logsd_beta_random", prob = prob)
-
-    out$summary$mu_random <- .tidy_summary(out$summary$mu_random, c(out$meta$group_spec$name, "factor"), out$meta$group_spec$map$label, fnames)
-    out$summary$logsd_random <- .tidy_summary(out$summary$logsd_random, c(out$meta$group_spec$name, "factor"), out$meta$group_spec$map$label, fnames)
-    out$summary$mu_beta_random <- .tidy_summary(out$summary$mu_beta_random, c(out$meta$group_spec$name, "predictor", "factor"), out$meta$group_spec$map$label, pnames$location[out$meta$pred_spec$P_random_ind], fnames)
-    out$summary$logsd_beta_random <- .tidy_summary(out$summary$logsd_beta_random, c(out$meta$group_spec$name, "predictor", "factor"), out$meta$group_spec$map$label, pnames$scale[out$meta$pred_spec$Q_random_ind], fnames)
+    out$summary$zeta <- .summary_between(object, prob)
 
     # Eta correlations
-    out$summary$Omega_eta <- .summarize(object, pars = "Omega_eta", prob = prob)
-    out$summary$Omega_eta <- .tidy_summary(out$summary$Omega_eta, c("row", "col"), fnames, fnames)
-    out$summary$Omega_eta <- out$summary$Omega_eta[.full_to_lower_tri(out$meta$indicator_spec$F), ]
+    out$summary$Omega_eta <- .summary_epsilon(object, prob)
 
     class(out) <- "summary.lmmelsm"
+    return(out)
+}
+
+.summary_measurement <- function(x, prob) {
+    fnames <- unlist(x$meta$indicator_spec$fname)
+    ind_names <- x$meta$indicator_spec$mname
+
+    lambda <- .summarize(x, pars = "lambda", prob = prob)
+    sigma <- .summarize(x, pars = "sigma", prob = prob)
+    nu <- .summarize(x, pars = "nu", prob = prob)
+
+    lambda <- .tidy_summary(lambda, c("factor", "item"), fnames, ind_names)
+    sigma <- .tidy_summary(sigma, "item", ind_names)
+    nu <- .tidy_summary(nu, "item", ind_names)
+
+    out <- nlist(lambda, sigma, nu)
+    return(out)
+}
+
+.summary_ranef <- function(x, prob) {
+    # Meta-data
+    pnames <- x$meta$pred_spec$pname
+    fnames <- unlist(x$meta$indicator_spec$fname)
+    F <- x$meta$indicator_spec$F
+    P_random <- x$meta$pred_spec$P_random
+    Q_random <- x$meta$pred_spec$Q_random
+    P_random_ind <- x$meta$pred_spec$P_random_ind
+    Q_random_ind <- x$meta$pred_spec$Q_random_ind
+
+    # Build RE names
+    re_names <- paste0(fnames, "MAGICSEP", rep(c("mu", "logsd"), each = F))
+    re_total <- 2 * F + 2 * P_random + 2 * Q_random
+
+    if(P_random > 0) {
+        re_names <- c(re_names, paste0(rep(fnames, each = P_random), "MAGICSEP", pnames$location[P_random_ind]))
+    }
+    if(Q_random > 0) {
+        re_names <- c(re_names, paste0(rep(fnames, each = Q_random), "MAGICSEP", pnames$scale[Q_random_ind]))
+    }
+    re_int_names <- re_names[1:(2 * F)]
+    re_slope_names <- re_names[(2 * F + 1):re_total]
+
+    ###############
+    # Hyperpriors #
+    ###############
+    # Summarize
+    mu_logsd_betas_random_sigma <- .summarize(x, pars = "mu_logsd_betas_random_sigma", prob = prob)
+    Omega_mean_logsd <- .summarize(x, pars = "Omega_mean_logsd", prob = prob)
+
+    # Tidy
+    mu_logsd_betas_random_sigma <- .tidy_summary(mu_logsd_betas_random_sigma, "param", re_names)
+    Omega_mean_logsd <- .tidy_summary(Omega_mean_logsd, c("row", "col"), re_names, re_names)
+
+    # Separate strings
+    mu_logsd_betas_random_sigma[, c("factor", "param")] <- .magicsep(mu_logsd_betas_random_sigma[, "param"], c("factor", "param"))
+
+    Omega_mean_logsd[, c("row_factor", "row_param")] <- .magicsep(Omega_mean_logsd[, "row"], c("row_factor", "row_param"))
+    Omega_mean_logsd[, c("col_factor", "col_param")] <- .magicsep(Omega_mean_logsd[, "col"], c("col_factor", "col_param"))
+    Omega_mean_logsd[, c("row", "col")] <- NULL
+    # Only return lower.tri
+    Omega_mean_logsd <- Omega_mean_logsd[.full_to_lower_tri(re_total), ]
+
+    ##################
+    # Random Effects #
+    ##################
+    gs <- x$meta$group_spec
+    # Summarize
+    mu_random <- .summarize(x, pars = "mu_random", prob = prob)
+    logsd_random <- .summarize(x, pars = "logsd_random", prob = prob)
+    mu_beta_random <- .summarize(x, pars = "mu_beta_random", prob = prob)
+    logsd_beta_random <- .summarize(x, pars = "logsd_beta_random", prob = prob)
+
+    # Tidy
+    mu_random <- .tidy_summary(mu_random, c(gs$name, "factor"), gs$map$label, fnames)
+    logsd_random <- .tidy_summary(logsd_random, c(gs$name, "factor"), gs$map$label, fnames)
+    mu_beta_random <- .tidy_summary(mu_beta_random, c(gs$name, "predictor", "factor"), gs$map$label, pnames$location[P_random_ind], fnames)
+    logsd_beta_random <- .tidy_summary(logsd_beta_random, c(gs$name, "predictor", "factor"), gs$map$label, pnames$scale[Q_random_ind], fnames)
+
+    out <- nlist(mu_logsd_betas_random_sigma,
+                 Omega_mean_logsd,
+                 mu_random,
+                 logsd_random,
+                 mu_beta_random,
+                 logsd_beta_random
+                 )
+
+    return(out)
+}
+
+.summary_fixef <- function(x, prob) {
+    # Meta-data
+    pnames <- x$meta$pred_spec$pname
+    fnames <- unlist(x$meta$indicator_spec$fname)
+
+    # Summarize
+    mu_beta <- .summarize(x, pars = "mu_beta", prob = prob)
+    logsd_beta <- .summarize(x, pars = "logsd_beta", prob = prob)
+
+    # Tidy
+    mu_beta <- .tidy_summary(mu_beta, c("predictor", "factor"), pnames$location, fnames)
+    logsd_beta <- .tidy_summary(logsd_beta, c("predictor", "factor"), pnames$scale, fnames)
+
+    out <- nlist(mu_beta, logsd_beta)
+    return(out)
+}
+
+.summary_between <- function(x, prob) {
+    # Meta-data
+    pnames <- x$meta$pred_spec$pname$between
+    fnames <- unlist(x$meta$indicator_spec$fname)
+    F <- x$meta$indicator_spec$F
+    re_int_names <- paste0(fnames, "MAGICSEP", rep(c("mu", "logsd"), each = F))
+
+    # Summarize
+    zeta <- .summarize(x, pars = "zeta", prob = prob)
+
+    # Tidy
+    zeta <- .tidy_summary(zeta, c("predictor", "param"), pnames, re_int_names)
+
+    # Separate
+    zeta[, c("factor", "param")] <- .magicsep(zeta[, "param"], c("factor", "param"))
+
+    out <- nlist(zeta)
+    return(out)
+}
+
+.summary_epsilon <- function(x, prob) {
+    # Meta-data
+    fnames <- unlist(x$meta$indicator_spec$fname)
+    F <- x$meta$indicator_spec$F
+
+    # Summarize
+    o <- .summarize(x, pars = "Omega_eta", prob = prob)
+
+    # Tidy
+    o <- .tidy_summary(o, c("row", "col"), fnames, fnames)
+
+    # Lower-tri only
+    o <- o[.full_to_lower_tri(F), ]
+
+    out <- list(Omega_eta = o)
     return(out)
 }
 ##' @title Print method for summary.lmmelsm objects.
 ##' @param x summary.lmmelsm object.
 ##' @param ... Not used.
 ##' @return 
-##' @author Stephen Martin
+##' @author Stephen R. Martin
 print.summary.lmmelsm <- function(x, ...) {
     dots <- list(...)
     digits <- dots$digits %IfNull% x$meta$digits
