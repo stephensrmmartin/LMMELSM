@@ -109,17 +109,18 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 
     ## Restructure
     ### Get factor-param names for each RE.
+    pnames <- out$meta$pred_spec$pname
     re_names <- paste0(fnames, "MAGICSEP", rep(c("mu", "logsd"), each = length(fnames)))
     re_total <- with(out$meta, 2 * indicator_spec$F + 2 * pred_spec$P_random + 2 * pred_spec$Q_random)
-    re_int_names <- re_names[1:(2 * out$meta$indicator_spec$F)]
-    re_slope_names <- re_names[(2 * out$meta$indicator_spec$F + 1):re_total]
-    pnames <- out$meta$pred_spec$pname
     if(out$meta$pred_spec$P_random > 0) { # If RE location slopes
         re_names <- c(re_names, paste0(rep(fnames, each = out$meta$pred_spec$P_random), "MAGICSEP", pnames$location[out$meta$pred_spec$P_random_ind]))
     }
     if(out$meta$pred_spec$Q_random > 0) { # IF RE scale slopes
         re_names <- c(re_names, paste0(rep(fnames, each = out$meta$pred_spec$Q_random), "MAGICSEP", pnames$scale[out$meta$pred_spec$Q_random_ind]))
     }
+    re_int_names <- re_names[1:(2 * out$meta$indicator_spec$F)]
+    re_slope_names <- re_names[(2 * out$meta$indicator_spec$F + 1):re_total]
+
     ### Restructure them
     out$summary$mu_logsd_betas_random_sigma <- .tidy_summary(out$summary$mu_logsd_betas_random_sigma, "param", re_names)
     out$summary$Omega_mean_logsd <- .tidy_summary(out$summary$Omega_mean_logsd, c("row", "col"), re_names, re_names)
@@ -152,10 +153,8 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 
     out$summary$mu_random <- .tidy_summary(out$summary$mu_random, c(out$meta$group_spec$name, "factor"), out$meta$group_spec$map$label, fnames)
     out$summary$logsd_random <- .tidy_summary(out$summary$logsd_random, c(out$meta$group_spec$name, "factor"), out$meta$group_spec$map$label, fnames)
-    out$summary$mu_beta_random <- .tidy_summary(out$summary$mu_beta_random, c(out$meta$group_spec$name, "param"), out$meta$group_spec$map$label, re_slope_names[1:out$meta$indicator_spec$P_random])
-    out$summary$logsd_beta_random <- .tidy_summary(out$summary$logsd_beta_random, c(out$meta$group_spec$name, "param"), out$meta$group_spec$map$label, re_slope_names[(out$meta$indicator_spec$P_random + 1):length(re_slope_names)])
-    out$summary$mu_beta_random[, c("predictor", "factor")] <- .magicsep(out$summary$mu_beta_random[, "param"], c("predictor", "factor"))
-    out$summary$logsd_beta_random[, c("predictor", "factor")] <- .magicsep(out$summary$logsd_beta_random[, "param"], c("predictor", "factor"))
+    out$summary$mu_beta_random <- .tidy_summary(out$summary$mu_beta_random, c(out$meta$group_spec$name, "predictor", "factor"), out$meta$group_spec$map$label, pnames$location[out$meta$pred_spec$P_random_ind], fnames)
+    out$summary$logsd_beta_random <- .tidy_summary(out$summary$logsd_beta_random, c(out$meta$group_spec$name, "predictor", "factor"), out$meta$group_spec$map$label, pnames$scale[out$meta$pred_spec$Q_random_ind], fnames)
 
     # Eta correlations
     out$summary$Omega_eta <- .summarize(object, pars = "Omega_eta", prob = prob)
@@ -240,6 +239,20 @@ print.summary.lmmelsm <- function(x, ...) {
     return(inds)
 }
 
+##' Creates "tidy" summaries in lieu of the stan rownames.
+##'
+##' .summarize creates an rstan-like summary with rownames, mat[1:R, 1:C].
+##' \code{.tidy_summary(mat, c("rows", "cols"))} would then create two new columns, "rows" and "cols" with the indices in them.
+##' If arguments are provided in \code{...}, then these indicate the mappings between the indices and labeled values.
+##' E.g., \code{.tidy_summary(mat, c("rows", "cols"), c("A", "B"), c("C", "D"))} would create two new columns, "rows" and "cols", and replace rows = 1 with rows = A; cols=2 with cols = D, and so on.
+##' Useful for going from stan rownames, to labeled columns.
+##' @title Takes stan summary, returns summary with indices-as-columns.
+##' @param x Output of .summarize
+##' @param labs The labels for each parameter index. E.g., "predictor", "factor"
+##' @param ... Optional (but recommended). Mappings for indices. E.g., Index column 1 is replaced by ...[[1]][col1Indices].
+##' @return Data frame.
+##' @author Stephen R. Martin
+##' @keywords internal
 .tidy_summary <- function(x, labs = NULL, ...) {
     dots <- list(...)
     n_relabel <- length(dots)
@@ -269,6 +282,10 @@ print.summary.lmmelsm <- function(x, ...) {
     out <- strcapture(paste0("(.*)",sep,"(.*)"), charvec, proto)
     return(out)
 }
+##' Helper for correlation-matrix summarize output.
+##'
+##' The .summarize function returns every redundant and constant element from a correlation matrix.
+##' This function returns the stan-strings (when \code{string = TRUE}, e.g., "[2,1]", "[3,1]"), or the row-index assuming column-major order.
 ##' @title Get indices for subsetting lower-tri summaries of square matrices. 
 ##' @param x Integer. Dimension of matrix.
 ##' @param string Logical (Default: FALSE). Whether to return strings (e.g., "[2,1]", or row indices, assuming column-major ordering.)
