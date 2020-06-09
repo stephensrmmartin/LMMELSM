@@ -110,6 +110,7 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     ## Restructure
     ### Get factor-param names for each RE.
     re_names <- paste0(fnames, "MAGICSEP", rep(c("mu", "logsd"), each = length(fnames)))
+    re_total <- with(out$meta, 2 * indicator_spec$F + 2 * pred_spec$P_random + 2 * pred_spec$Q_random)
     pnames <- out$meta$pred_spec$pname
     if(out$meta$pred_spec$P_random > 0) { # If RE location slopes
         re_names <- c(re_names, paste0(rep(fnames, each = out$meta$pred_spec$P_random), "MAGICSEP", pnames$location[out$meta$pred_spec$P_random_ind]))
@@ -126,16 +127,20 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     out$summary$Omega_mean_logsd[, c("row_factor", "row_param")] <- .magicsep(out$summary$Omega_mean_logsd[, "row"], c("row_factor", "row_param"))
     out$summary$Omega_mean_logsd[, c("col_factor", "col_param")] <- .magicsep(out$summary$Omega_mean_logsd[, "col"], c("col_factor", "col_param"))
     out$summary$Omega_mean_logsd[, c("row", "col")] <- NULL
-    
+    out$summary$Omega_mean_logsd <- out$summary$Omega_mean_logsd[.full_to_lower_tri(re_total), ]
 
     # Location predictors
     out$summary$mu_beta <- .summarize(object, pars = "mu_beta", prob = prob)
+    out$summary$mu_beta <- .tidy_summary(out$summary$mu_beta, c("predictor", "factor"), pnames$location, fnames)
 
     # Scale predictors
     out$summary$logsd_beta <- .summarize(object, pars = "logsd_beta", prob = prob)
+    out$summary$logsd_beta <- .tidy_summary(out$summary$logsd_beta, c("predictor", "factor"), pnames$scale, fnames)
 
     # L2 scale predictors
     out$summary$zeta <- .summarize(object, pars = "zeta", prob = prob)
+    out$summary$zeta <- .tidy_summary(out$summary$zeta, c("predictor", "param"), pnames$between, re_names[1:(2 * out$meta$indicator_spec$F)]) # RE intercepts only
+    out$summary$zeta[, c("factor", "param")] <- .magicsep(out$summary$zeta[, "param"], c("factor", "param"))
 
     # Ranefs
     out$summary$mu_random <- .summarize(object, pars = "mu_random", prob = prob)
@@ -252,4 +257,21 @@ print.summary.lmmelsm <- function(x, ...) {
     proto <- do.call(data.frame, args)
     out <- strcapture(paste0("(.*)",sep,"(.*)"), charvec, proto)
     return(out)
+}
+##' @title Get indices for subsetting lower-tri summaries of square matrices. 
+##' @param x Integer. Dimension of matrix.
+##' @param string Logical (Default: FALSE). Whether to return strings (e.g., "[2,1]", or row indices, assuming column-major ordering.)
+##' @return 
+##' @author Stephen R. Martin
+##' @keywords internal
+.full_to_lower_tri <- function(x, string = FALSE) {
+    if(string) {
+        inds <- which(lower.tri(matrix(0, x, x)), arr.ind = TRUE)
+        out <- paste0("[", inds[, 1], ",", inds[,2], "]")
+        return(out)
+    } else {
+        inds <- which(lower.tri(matrix(0, x, x)))
+        out <- inds
+        return(out)
+    }
 }
