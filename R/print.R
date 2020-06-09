@@ -214,3 +214,19 @@ print.summary.lmmelsm <- function(x, ...) {
     out <- (cbind(inds, x))
     return(out)
 }
+
+.magicsep <- function(charvec, labs, types = NULL, sep = "MAGICSEP") {
+    args <- list()
+    if(is.null(types)) {
+        for(l in labs) {
+            args[[l]] <- character()
+        }
+    } else {
+        for(i in seq_len(length(labs))) {
+            args[[labs[i]]] <- types[[i]]
+        }
+    }
+    proto <- do.call(data.frame, args)
+    out <- strcapture(paste0("(.*)",sep,"(.*)"), charvec, proto)
+    return(out)
+}
