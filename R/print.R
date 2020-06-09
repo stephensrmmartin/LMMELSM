@@ -132,7 +132,7 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     x <- x[, newcols]
 
     if(arrange) {
-        args <- list(x[,1], x[,2], x[,3])
+        args <- x[, cols]
         ord <- do.call(order, args)
         x <- x[ord, ]
     }
