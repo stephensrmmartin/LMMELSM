@@ -111,6 +111,8 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     ### Get factor-param names for each RE.
     re_names <- paste0(fnames, "MAGICSEP", rep(c("mu", "logsd"), each = length(fnames)))
     re_total <- with(out$meta, 2 * indicator_spec$F + 2 * pred_spec$P_random + 2 * pred_spec$Q_random)
+    re_int_names <- re_names[1:(2 * out$meta$indicator_spec$F)]
+    re_slope_names <- re_names[(2 * out$meta$indicator_spec$F + 1):re_total]
     pnames <- out$meta$pred_spec$pname
     if(out$meta$pred_spec$P_random > 0) { # If RE location slopes
         re_names <- c(re_names, paste0(rep(fnames, each = out$meta$pred_spec$P_random), "MAGICSEP", pnames$location[out$meta$pred_spec$P_random_ind]))
@@ -139,7 +141,7 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 
     # L2 scale predictors
     out$summary$zeta <- .summarize(object, pars = "zeta", prob = prob)
-    out$summary$zeta <- .tidy_summary(out$summary$zeta, c("predictor", "param"), pnames$between, re_names[1:(2 * out$meta$indicator_spec$F)]) # RE intercepts only
+    out$summary$zeta <- .tidy_summary(out$summary$zeta, c("predictor", "param"), pnames$between, re_int_names) # RE intercepts only
     out$summary$zeta[, c("factor", "param")] <- .magicsep(out$summary$zeta[, "param"], c("factor", "param"))
 
     # Ranefs
@@ -148,8 +150,17 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     out$summary$mu_beta_random <- .summarize(object, pars = "mu_beta_random", prob = prob)
     out$summary$logsd_beta_random <- .summarize(object, pars = "logsd_beta_random", prob = prob)
 
+    out$summary$mu_random <- .tidy_summary(out$summary$mu_random, c(out$meta$group_spec$name, "factor"), out$meta$group_spec$map$label, fnames)
+    out$summary$logsd_random <- .tidy_summary(out$summary$logsd_random, c(out$meta$group_spec$name, "factor"), out$meta$group_spec$map$label, fnames)
+    out$summary$mu_beta_random <- .tidy_summary(out$summary$mu_beta_random, c(out$meta$group_spec$name, "param"), out$meta$group_spec$map$label, re_slope_names[1:out$meta$indicator_spec$P_random])
+    out$summary$logsd_beta_random <- .tidy_summary(out$summary$logsd_beta_random, c(out$meta$group_spec$name, "param"), out$meta$group_spec$map$label, re_slope_names[(out$meta$indicator_spec$P_random + 1):length(re_slope_names)])
+    out$summary$mu_beta_random[, c("predictor", "factor")] <- .magicsep(out$summary$mu_beta_random[, "param"], c("predictor", "factor"))
+    out$summary$logsd_beta_random[, c("predictor", "factor")] <- .magicsep(out$summary$logsd_beta_random[, "param"], c("predictor", "factor"))
+
     # Eta correlations
     out$summary$Omega_eta <- .summarize(object, pars = "Omega_eta", prob = prob)
+    out$summary$Omega_eta <- .tidy_summary(out$summary$Omega_eta, c("row", "col"), fnames, fnames)
+    out$summary$Omega_eta <- out$summary$Omega_eta[.full_to_lower_tri(out$meta$indicator_spec$F), ]
 
     class(out) <- "summary.lmmelsm"
     return(out)
