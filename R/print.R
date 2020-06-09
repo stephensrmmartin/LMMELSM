@@ -266,7 +266,21 @@ print.summary.lmmelsm <- function(x, ...) {
     out <- (cbind(inds, x))
     return(out)
 }
-
+##' Converts a character vector int columns.
+##'
+##' A wrapper around strcapture.
+##' Given "a_MAGICSEP_b", returns a vector of "a_" and "_b".
+##' Useful for converting a multiple-parameter string into columns of parameters.
+##' User can give column names in \code{labs}, and types of each extracted component as a list in \code{types}.
+##' User can customize \code{sep}, but by default assumes MAGICSEP.
+##' @title Convert char vector to columns.
+##' @param charvec Character vector. Characters to separate into columns.
+##' @param labs Character vector. Labels for the columns.
+##' @param types List (Default: All characters). List (in order) of extracted types.
+##' @param sep String (Default: "MAGICSEP").
+##' @return data.frame
+##' @author Stephen R. Martin
+##' @keywords internal
 .magicsep <- function(charvec, labs, types = NULL, sep = "MAGICSEP") {
     args <- list()
     if(is.null(types)) {
