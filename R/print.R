@@ -117,6 +117,29 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     return(out)
 }
 
+##' @title Rearrange summary output.
+##' @param x Summary table.
+##' @param cols Columns, in order, to place in front.
+##' @param arrange Logical (Default: TRUE). Whether to sort rows.
+##' @return Data.frame.
+##' @author Stephen R. Martin
+##' @keywords internal
+.summary_rearrange <- function(x, cols, arrange = TRUE) {
+    cns <- colnames(x)
+    col_ind <- seq_len(ncol(x))
+    where <- match(cols, cns)
+    newcols <- c(where, col_ind[-where])
+    x <- x[, newcols]
+
+    if(arrange) {
+        args <- list(x[,1], x[,2], x[,3])
+        ord <- do.call(order, args)
+        x <- x[ord, ]
+    }
+
+    return(x)
+}
+
 .summary_measurement <- function(x, prob) {
     fnames <- unlist(x$meta$indicator_spec$fname)
     ind_names <- x$meta$indicator_spec$mname
