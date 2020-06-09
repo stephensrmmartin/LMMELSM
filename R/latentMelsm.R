@@ -153,6 +153,8 @@ melsm_latent <- function(formula, group, data, ...) {
                        data = mf[, group_name],
                        numeric = as.numeric(as.factor(mf[, group_name])),
                        K = length(unique(mf[, group_name])))
+    group_spec$map <- data.frame(numeric = 1:K,
+                                 label = group_spec$data[match(1:K, group_spec$numeric)])
     out$meta$group_spec <- group_spec
     out$stan_data$group <- group_spec$numeric
     out$stan_data$K <- group_spec$K
