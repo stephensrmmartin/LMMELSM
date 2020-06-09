@@ -120,11 +120,11 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 ##' @title Rearrange summary output.
 ##' @param x Summary table.
 ##' @param cols Columns, in order, to place in front.
-##' @param arrange Logical (Default: TRUE). Whether to sort rows.
+##' @param arrange Logical (Default: FALSE). Whether to sort rows.
 ##' @return Data.frame.
 ##' @author Stephen R. Martin
 ##' @keywords internal
-.summary_rearrange <- function(x, cols, arrange = TRUE) {
+.summary_rearrange <- function(x, cols, arrange = FALSE) {
     cns <- colnames(x)
     col_ind <- seq_len(ncol(x))
     where <- match(cols, cns)
@@ -132,7 +132,7 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     x <- x[, newcols]
 
     if(arrange) {
-        args <- x[, cols]
+        args <- x[, cols, drop = FALSE]
         ord <- do.call(order, args)
         x <- x[ord, ]
     }
@@ -142,16 +142,24 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 # TODO: Fix the .summary_* fns using .summary_rearrange.
 
 .summary_measurement <- function(x, prob) {
+    # Meta-data
     fnames <- unlist(x$meta$indicator_spec$fname)
     ind_names <- x$meta$indicator_spec$mname
 
+    # Summarize
     lambda <- .summarize(x, pars = "lambda", prob = prob)
     sigma <- .summarize(x, pars = "sigma", prob = prob)
     nu <- .summarize(x, pars = "nu", prob = prob)
 
+    # Tidy
     lambda <- .tidy_summary(lambda, c("factor", "item"), fnames, ind_names)
     sigma <- .tidy_summary(sigma, "item", ind_names)
     nu <- .tidy_summary(nu, "item", ind_names)
+
+    # Rearrange
+    lambda <- .summary_rearrange(lambda, c("factor", "item"))
+    sigma <- .summary_rearrange(sigma, "item")
+    nu <- .summary_rearrange(nu, "item")
 
     out <- nlist(lambda, sigma, nu)
     return(out)
@@ -200,6 +208,10 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     # Only return lower.tri
     Omega_mean_logsd <- Omega_mean_logsd[.full_to_lower_tri(re_total), ]
 
+    # Rearrange
+    mu_logsd_betas_random_sigma <- .summary_rearrange(mu_logsd_betas_random_sigma, c("factor", "param"), arrange=FALSE)
+    Omega_mean_logsd <- .summary_rearrange(Omega_mean_logsd, c("row_factor", "row_param", "col_factor", "col_param"), arrange=FALSE)
+
     ##################
     # Random Effects #
     ##################
@@ -215,6 +227,12 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     logsd_random <- .tidy_summary(logsd_random, c(gs$name, "factor"), gs$map$label, fnames)
     mu_beta_random <- .tidy_summary(mu_beta_random, c(gs$name, "predictor", "factor"), gs$map$label, pnames$location[P_random_ind], fnames)
     logsd_beta_random <- .tidy_summary(logsd_beta_random, c(gs$name, "predictor", "factor"), gs$map$label, pnames$scale[Q_random_ind], fnames)
+
+    # Rearrange
+    mu_random <- .summary_rearrange(mu_random, c(gs$name, "factor"))
+    logsd_random <- .summary_rearrange(logsd_random, c(gs$name, "factor"))
+    mu_beta_random <- .summary_rearrange(mu_beta_random, c(gs$name, "factor", "predictor"))
+    logsd_beta_random <- .summary_rearrange(logsd_beta_random, c(gs$name, "factor", "predictor"))
 
     out <- nlist(mu_logsd_betas_random_sigma,
                  Omega_mean_logsd,
@@ -240,6 +258,10 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     mu_beta <- .tidy_summary(mu_beta, c("predictor", "factor"), pnames$location, fnames)
     logsd_beta <- .tidy_summary(logsd_beta, c("predictor", "factor"), pnames$scale, fnames)
 
+    # Rearrange
+    mu_beta <- .summary_rearrange(mu_beta, c("factor", "predictor"))
+    logsd_beta <- .summary_rearrange(logsd_beta, c("factor", "predictor"))
+
     out <- nlist(mu_beta, logsd_beta)
     return(out)
 }
@@ -259,6 +281,9 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 
     # Separate
     zeta[, c("factor", "param")] <- .magicsep(zeta[, "param"], c("factor", "param"))
+
+    # Rearrange
+    zeta <- .summary_rearrange(zeta, c("factor", "param", "predictor"))
 
     out <- nlist(zeta)
     return(out)
