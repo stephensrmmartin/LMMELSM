@@ -100,10 +100,33 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 
     ## Restructure
     out$summary$lambda <- .tidy_summary(out$summary$lambda, c("factor", "item"), fnames, ind_names)
+    out$summary$sigma <- .tidy_summary(out$summary$sigma, "item", ind_names)
+    out$summary$nu <- .tidy_summary(out$summary$nu, "item", ind_names)
 
     # RE SDs.
     out$summary$mu_logsd_betas_random_sigma <- .summarize(object, pars = "mu_logsd_betas_random_sigma", prob = prob)
     out$summary$Omega_mean_logsd <- .summarize(object, pars = "Omega_mean_logsd", prob = prob)
+
+    ## Restructure
+    ### Get factor-param names for each RE.
+    re_names <- paste0(fnames, "MAGICSEP", rep(c("mu", "logsd"), each = length(fnames)))
+    pnames <- out$meta$pred_spec$pname
+    if(out$meta$pred_spec$P_random > 0) { # If RE location slopes
+        re_names <- c(re_names, paste0(rep(fnames, each = out$meta$pred_spec$P_random), "MAGICSEP", pnames$location[out$meta$pred_spec$P_random_ind]))
+    }
+    if(out$meta$pred_spec$Q_random > 0) { # IF RE scale slopes
+        re_names <- c(re_names, paste0(rep(fnames, each = out$meta$pred_spec$Q_random), "MAGICSEP", pnames$scale[out$meta$pred_spec$Q_random_ind]))
+    }
+    ### Restructure them
+    out$summary$mu_logsd_betas_random_sigma <- .tidy_summary(out$summary$mu_logsd_betas_random_sigma, "param", re_names)
+    out$summary$Omega_mean_logsd <- .tidy_summary(out$summary$Omega_mean_logsd, c("row", "col"), re_names, re_names)
+    ## Split MAGICSEP'd names into columns.
+    out$summary$mu_logsd_betas_random_sigma[, c("factor", "param")] <- .magicsep(out$summary$mu_logsd_betas_random_sigma[, "param"], c("factor", "param"))
+
+    out$summary$Omega_mean_logsd[, c("row_factor", "row_param")] <- .magicsep(out$summary$Omega_mean_logsd[, "row"], c("row_factor", "row_param"))
+    out$summary$Omega_mean_logsd[, c("col_factor", "col_param")] <- .magicsep(out$summary$Omega_mean_logsd[, "col"], c("col_factor", "col_param"))
+    out$summary$Omega_mean_logsd[, c("row", "col")] <- NULL
+    
 
     # Location predictors
     out$summary$mu_beta <- .summarize(object, pars = "mu_beta", prob = prob)
