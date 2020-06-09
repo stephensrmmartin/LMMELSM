@@ -139,6 +139,7 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 
     return(x)
 }
+# TODO: Fix the .summary_* fns using .summary_rearrange.
 
 .summary_measurement <- function(x, prob) {
     fnames <- unlist(x$meta$indicator_spec$fname)
