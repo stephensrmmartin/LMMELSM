@@ -85,8 +85,11 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     out <- list(meta = object$meta, summary = list())
     out$meta$digits <- dots$digits %IfNull% 3
 
-    ind_names <- out$meta$indicator_spec$mname
-    fnames <- unlist(out$meta$indicator_spec$fname)
+    # More meta-data
+    out$meta$stan <- list()
+    out$meta$stan$date <- object$fit@date
+    out$meta$stan$elapsed <- rstan::get_elapsed_time(object$fit)
+    out$meta$stan$diag <- .get_diagnostics(object$fit)
 
     # TODO: Get diagnostics (Rhats, divergences)
     # TODO: Consider: Restructure these as [item/predictor, cols, factor], and name dimensions.
@@ -458,4 +461,8 @@ print.summary.lmmelsm <- function(x, ...) {
         out <- inds
         return(out)
     }
+}
+
+.get_diagnostics <- function(fit) {
+    
 }
