@@ -75,7 +75,7 @@ melsm_latent <- function(formula, group, data, ...) {
               "Omega_mean_logsd")
     stan_args$pars <- pars
 
-    sOut <- do.call(sampling, c(stan_args, dots))
+    sOut <- suppressWarnings(do.call(sampling, c(stan_args, dots)))
 
     out <- list(fit = sOut,
                 meta = d$meta,
