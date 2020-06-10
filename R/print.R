@@ -525,5 +525,8 @@ print.summary.lmmelsm <- function(x, ...) {
         .newline()
     } else {
         cat("Diagnostics passed.")
+        .newline()
     }
+
+    # TODO: BFMI and treedepth?
 }
