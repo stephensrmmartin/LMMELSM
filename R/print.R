@@ -464,5 +464,66 @@ print.summary.lmmelsm <- function(x, ...) {
 }
 
 .get_diagnostics <- function(fit) {
-    
+    bfmi <- rstan::get_bfmi(fit)
+    bfmi_chains <- rstan::get_low_bfmi_chains(fit)
+
+    div_num <- rstan::get_num_divergent(fit)
+    div_iter <- rstan::get_divergent_iterations(fit)
+
+    tree_num <- rstan::get_num_max_treedepth(fit)
+    tree_iter <- rstan::get_max_treedepth_iterations(fit)
+
+    rhat <- rstan::monitor(fit)[,"Rhat"]
+    rhat <- rhat[!is.na(rhat)]
+    rhat_sorted <- sort(rhat, decreasing = TRUE)
+
+    out <- nlist(bfmi,
+                 bfmi_chains,
+                 div_num,
+                 div_iter,
+                 tree_num,
+                 tree_iter,
+                 rhat,
+                 rhat_sorted)
+    class(out) <- "lmmelsm_diag"
+    return(out)
+}
+
+.print.lmmelsm_diag <- function(x) {
+    passed <- TRUE
+
+    cat("Divergent Transitions: ")
+    if(x$div_num > 0) {
+        passed <- FALSE
+        cat("Failed")
+        .newline()
+        .tab()
+        cat(x$div_num, " divergences")
+        .newline()
+    } else {
+        cat("Passed")
+        .newline()
+    }
+
+    cat("Convergence: ")
+    if(any(x$rhat >= 1.1)) {
+        passed <- FALSE
+        .newline()
+        cat("Failed")
+        .newline()
+        .tab()
+        cat("Ten highest Rhats: ")
+        cat(head(x$rhat_sorted, 10))
+        .newline()
+    } else {
+        cat("Passed")
+        .newline()
+    }
+
+    if(!passed) {
+        cat("*** Diagnostics failed. Do not interpret estimates. ***")
+        .newline()
+    } else {
+        cat("Diagnostics passed.")
+    }
 }
