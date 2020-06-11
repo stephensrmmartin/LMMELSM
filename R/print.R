@@ -631,7 +631,14 @@ print.summary.lmmelsm <- function(x, ...) {
     tree_num <- rstan::get_num_max_treedepth(fit)
     tree_iter <- rstan::get_max_treedepth_iterations(fit)
 
-    rhat <- rstan::summary(fit)$summary[,"Rhat"]
+    # TODO: Limit this to parameters; not eta{_logsd}
+    pars <- c("lambda", "sigma", "nu",
+              "mu_logsd_betas_random_sigma", "Omega_mean_logsd",
+              "mu_random", "logsd_random", "mu_beta_random", "logsd_beta_random",
+              "mu_beta", "logsd_beta",
+              "zeta",
+              "Omega_eta")
+    rhat <- rstan::summary(fit, pars = pars)$summary[,"Rhat"]
     rhat <- rhat[!is.na(rhat)]
     rhat_sorted <- sort(rhat, decreasing = TRUE)
 
