@@ -436,7 +436,7 @@ print.summary.lmmelsm <- function(x, ...) {
     # RE SDs
     .sep()
     cat("Random effect standard deviations")
-    if(x$meta$pred_spec$P_random > 0 | x$meta$pred_spec$Q_random > 0) {
+    if(x$meta$pred_spec$R > 0) {
         .newline()
         .tab()
         cat("Note: Between-group scale model used.")
