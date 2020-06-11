@@ -29,7 +29,7 @@
 ##' @title Print method for lmmelsm objects.
 ##' @param x lmmelsm object.
 ##' @param ... Not used.
-##' @return NULL.
+##' @return x (Invisibly).
 ##' @author Stephen R. Martin
 ##' @export
 print.lmmelsm <- function(x, ...) {
@@ -76,6 +76,7 @@ print.lmmelsm <- function(x, ...) {
         cat(.print.formula(x$meta$pred_spec$plist$between))
         .newline()
     }
+    invisible(x)
 }
 ##' @title Summary method for lmmelsm objects.
 ##' @param object lmmelsm object.
@@ -327,7 +328,7 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 ##' @title Print method for summary.lmmelsm objects.
 ##' @param x summary.lmmelsm object.
 ##' @param ... Not used.
-##' @return NULL.
+##' @return x (Invisibly).
 ##' @author Stephen R. Martin
 ##' @export
 print.summary.lmmelsm <- function(x, ...) {
@@ -465,6 +466,8 @@ print.summary.lmmelsm <- function(x, ...) {
     corMat[upper.tri(corMat)] <- x$summary$Omega_mean_logsd$SD
     rownames(corMat) <- colnames(corMat) <- re_names
     print(corMat, digits = digits)
+
+    invisible(object)
 }
 
 .print_table <- function(x, digits, drop = NULL) {
