@@ -12,7 +12,7 @@
 \item{...}{Not used.}
 }
 \value{
-
+NULL.
 }
 \description{
 Print method for summary.lmmelsm objects.

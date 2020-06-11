@@ -318,7 +318,7 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 ##' @title Print method for summary.lmmelsm objects.
 ##' @param x summary.lmmelsm object.
 ##' @param ... Not used.
-##' @return 
+##' @return NULL.
 ##' @author Stephen R. Martin
 ##' @export
 print.summary.lmmelsm <- function(x, ...) {
