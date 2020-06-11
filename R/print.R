@@ -98,11 +98,6 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     out$meta$stan$elapsed <- rstan::get_elapsed_time(object$fit)
     out$meta$stan$diag <- .get_diagnostics(object$fit)
 
-    # TODO: Get diagnostics (Rhats, divergences)
-    # TODO: Consider: Restructure these as [item/predictor, cols, factor], and name dimensions.
-    ## Similar to omegad; makes it easier to print by factor, and to subset.
-    ## Or make them 'tidy'
-
     # Measurement model.
     out$summary[c("lambda", "sigma", "nu")] <- .summary_measurement(object, prob)
 
@@ -149,7 +144,6 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 
     return(x)
 }
-# TODO: Fix the .summary_* fns using .summary_rearrange.
 
 .summary_measurement <- function(x, prob) {
     # Meta-data
@@ -187,7 +181,7 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 
     # Build RE names
     re_names <- paste0(fnames, "MAGICSEP", rep(c("mu", "logsd"), each = F))
-    re_total <- 2 * F + 2 * P_random + 2 * Q_random
+    re_total <- 2 * F + F * P_random + F * Q_random
 
     if(P_random > 0) {
         re_names <- c(re_names, paste0(rep(fnames, each = P_random), "MAGICSEP", pnames$location[P_random_ind]))
@@ -343,6 +337,8 @@ print.summary.lmmelsm <- function(x, ...) {
     # Diagnostics
     .sep()
     cat("Diagnostic Checks")
+    # TODO: Ten-highest Rhats are unnamed
+    # TODO: Convergence: \n Failed (Should just be Convergence: Failed)
     .sep()
     .newline()
     .print.lmmelsm_diag(x$meta$stan$diag)
