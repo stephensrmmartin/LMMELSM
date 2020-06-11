@@ -77,7 +77,13 @@ print.lmmelsm <- function(x, ...) {
         .newline()
     }
 }
-
+##' @title Summary method for lmmelsm objects.
+##' @param object lmmelsm object.
+##' @param prob Numeric (Default: .95). Amount of probability mass contained in the credible interval.
+##' @param ... Not used.
+##' @return summary.lmmelsm object. A list containing \code{meta} (metadata) and \code{summary} (summary tables).
+##' @author Stephen R. Martin
+##' @export
 summary.lmmelsm <- function(object, prob = .95, ...) {
 
     dots <- list(...)
@@ -314,6 +320,7 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 ##' @param ... Not used.
 ##' @return 
 ##' @author Stephen R. Martin
+##' @export
 print.summary.lmmelsm <- function(x, ...) {
     dots <- list(...)
     digits <- dots$digits %IfNull% x$meta$digits
