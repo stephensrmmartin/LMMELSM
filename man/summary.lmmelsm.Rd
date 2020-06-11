@@ -4,7 +4,7 @@
 \alias{summary.lmmelsm}
 \title{Summary method for lmmelsm objects.}
 \usage{
-summary.lmmelsm(object, prob = 0.95, ...)
+\method{summary}{lmmelsm}(object, prob = 0.95, ...)
 }
 \arguments{
 \item{object}{lmmelsm object.}

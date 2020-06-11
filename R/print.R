@@ -83,6 +83,7 @@ print.lmmelsm <- function(x, ...) {
 ##' @param ... Not used.
 ##' @return summary.lmmelsm object. A list containing \code{meta} (metadata) and \code{summary} (summary tables).
 ##' @author Stephen R. Martin
+##' @method summary lmmelsm
 ##' @export
 summary.lmmelsm <- function(object, prob = .95, ...) {
 
