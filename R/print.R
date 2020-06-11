@@ -337,8 +337,6 @@ print.summary.lmmelsm <- function(x, ...) {
     # Diagnostics
     .sep()
     cat("Diagnostic Checks")
-    # TODO: Ten-highest Rhats are unnamed
-    # TODO: Convergence: \n Failed (Should just be Convergence: Failed)
     .sep()
     .newline()
     .print.lmmelsm_diag(x$meta$stan$diag)
@@ -668,12 +666,12 @@ print.summary.lmmelsm <- function(x, ...) {
     cat("Convergence: ")
     if(any(x$rhat >= 1.1)) {
         passed <- FALSE
-        .newline()
         cat("Failed")
         .newline()
         .tab()
         cat("Ten highest Rhats: ")
-        cat(head(x$rhat_sorted, 10))
+        .newline()
+        print(head(x$rhat_sorted, 10))
         .newline()
     } else {
         cat("Passed")
