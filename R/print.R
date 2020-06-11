@@ -111,10 +111,10 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     out$summary[c("mu_beta", "logsd_beta")] <- .summary_fixef(object, prob)
 
     # L2 scale predictors
-    out$summary$zeta <- .summary_between(object, prob)
+    out$summary$zeta <- .summary_between(object, prob)$zeta
 
     # Eta correlations
-    out$summary$Omega_eta <- .summary_epsilon(object, prob)
+    out$summary$Omega_eta <- .summary_epsilon(object, prob)$Omega_eta
 
     class(out) <- "summary.lmmelsm"
     return(out)
@@ -317,6 +317,148 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 print.summary.lmmelsm <- function(x, ...) {
     dots <- list(...)
     digits <- dots$digits %IfNull% x$meta$digits
+
+    # Diagnostics
+    .sep()
+    cat("Diagnostic Checks")
+    .sep()
+    .newline()
+    .print.lmmelsm_diag(x$meta$stan$diag)
+
+    # Measurement model
+    IS <- x$meta$indicator_spec
+    .sep()
+    cat("Measurement Model")
+    .sep()
+    .newline()
+
+    ## Loadings
+    cat("Loadings")
+    .newline()
+    for(f in 1:IS$F) {
+        cat("Factor: ")
+        cat(IS$fname[[f]])
+        .newline()
+        with(x$summary, .print_table(lambda[lambda$factor == IS$fname[[f]] & lambda$item %in% IS$iname[[f]], ], digits, "factor"))
+        .newline()
+    }
+
+    ## Residual SD
+    .newline()
+    cat("Residual Standard Deviation")
+    .newline()
+    with(x$summary, .print_table(sigma, digits))
+
+    ## Intercepts
+    .newline()
+    cat("Intercepts")
+    .newline()
+    with(x$summary, .print_table(nu, digits))
+
+    # Factor Cors
+    if(IS$F > 1) {
+        .newline()
+        cat("Factor correlations")
+        .newline()
+        with(x$summary, .print_table(Omega_eta, digits))
+    }
+
+    # Location model
+    if(x$meta$pred_spec$P > 0) {
+        PS <- x$meta$pred_spec
+        .sep()
+        cat("Location model (Fixed effects)")
+        .sep()
+        .newline()
+        for(f in 1:IS$F) {
+            cat("Factor: ")
+            cat(IS$fname[[f]])
+            .newline()
+            with(x$summary, .print_table(mu_beta[mu_beta$factor == IS$fname[[f]], ], digits, "factor"))
+            .newline()
+        }
+    }
+
+    # Scale model
+    if(x$meta$pred_spec$Q > 0) {
+        PS <- x$meta$pred_spec
+        .sep()
+        cat("Scale model (Fixed effects)")
+        .sep()
+        .newline()
+        for(f in 1:IS$F) {
+            cat("Factor: ")
+            cat(IS$fname[[f]])
+            .newline()
+            with(x$summary, .print_table(logsd_beta[logsd_beta$factor == IS$fname[[f]], ], digits, "factor"))
+            .newline()
+        }
+    }
+
+    # Between model
+    if(x$meta$pred_spec$R > 0) {
+        PS <- x$meta$pred_spec
+        .sep()
+        cat("Between-group scale model")
+        .sep()
+        .newline()
+        for(f in 1:IS$F) {
+            cat("Factor: ")
+            cat(IS$fname[[f]])
+            .newline()
+            with(x$summary, .print_table(zeta[zeta$factor == IS$fname[[f]], ], digits, "factor"))
+            .newline()
+        }
+    }
+
+    # RE SDs
+    .sep()
+    cat("Random effect standard deviations")
+    if(x$meta$pred_spec$P_random > 0 | x$meta$pred_spec$Q_random > 0) {
+        .newline()
+        .tab()
+        cat("Note: Between-group scale model used.")
+        .newline()
+        .tab()
+        cat("'mu' and 'logsd' represent RE-SDs when between-group covariates are zero.")
+    }
+    .sep()
+    .newline()
+    .print_table(x$summary$mu_logsd_betas_random_sigma, digits)
+
+    # RE Cors
+    ## Mean estimates only.
+    .sep()
+    cat("Random effect correlations (Posterior Means (Lower) and SDs (Upper))")
+    .newline()
+    .tab()
+    cat("Note: See summary(out)$summary$Omega_mean_logsd for full summary.")
+    .sep()
+    .newline()
+    cms <- x$summary$Omega_mean_logsd
+    re_total <- with(x$meta, indicator_spec$F*2 + pred_spec$P_random*indicator_spec$F + pred_spec$Q_random*indicator_spec$F)
+    re_names <- paste0(unlist(IS$fname), "_", rep(c("mu", "logsd"), each = IS$F))
+    if(x$meta$pred_spec$P_random > 0) {
+        re_names <- c(re_names, paste0(rep(unlist(IS$fname), each = PS$P_random), "_", PS$pname$location[PS$P_random_ind]))
+    }
+    if(x$meta$pred_spec$Q_random > 0) {
+        re_names <- c(re_names, paste0(rep(unlist(IS$fname), each = PS$Q_random), "_", PS$pname$scale[PS$Q_random_ind]))
+    }
+    corMat <- matrix(1, nrow = re_total, ncol = re_total)
+    corMat[lower.tri(corMat)] <- x$summary$Omega_mean_logsd$Mean
+    corMat[upper.tri(corMat)] <- x$summary$Omega_mean_logsd$SD
+    rownames(corMat) <- colnames(corMat) <- re_names
+    print(corMat, digits = digits)
+}
+
+.print_table <- function(x, digits, drop = NULL) {
+    if(!is.null(drop)) {
+        drop_cols <- match(drop, colnames(x))
+        x <- x[, -drop_cols]
+    }
+
+    print.data.frame(x, digits = digits, row.names = FALSE)
+    
 }
 
 .print.formula <- function(f) {
@@ -473,7 +615,7 @@ print.summary.lmmelsm <- function(x, ...) {
     tree_num <- rstan::get_num_max_treedepth(fit)
     tree_iter <- rstan::get_max_treedepth_iterations(fit)
 
-    rhat <- rstan::monitor(fit)[,"Rhat"]
+    rhat <- rstan::summary(fit)$summary[,"Rhat"]
     rhat <- rhat[!is.na(rhat)]
     rhat_sorted <- sort(rhat, decreasing = TRUE)
 
