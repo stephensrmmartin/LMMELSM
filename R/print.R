@@ -226,23 +226,28 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     # Random Effects #
     ##################
     gs <- x$meta$group_spec
-    # Summarize
+
     mu_random <- .summarize(x, pars = "mu_random", prob = prob)
-    logsd_random <- .summarize(x, pars = "logsd_random", prob = prob)
-    mu_beta_random <- .summarize(x, pars = "mu_beta_random", prob = prob)
-    logsd_beta_random <- .summarize(x, pars = "logsd_beta_random", prob = prob)
-
-    # Tidy
     mu_random <- .tidy_summary(mu_random, c(gs$name, "factor"), gs$map$label, fnames)
-    logsd_random <- .tidy_summary(logsd_random, c(gs$name, "factor"), gs$map$label, fnames)
-    mu_beta_random <- .tidy_summary(mu_beta_random, c(gs$name, "predictor", "factor"), gs$map$label, pnames$location[P_random_ind], fnames)
-    logsd_beta_random <- .tidy_summary(logsd_beta_random, c(gs$name, "predictor", "factor"), gs$map$label, pnames$scale[Q_random_ind], fnames)
-
-    # Rearrange
     mu_random <- .summary_rearrange(mu_random, c(gs$name, "factor"))
+
+    logsd_random <- .summarize(x, pars = "logsd_random", prob = prob)
+    logsd_random <- .tidy_summary(logsd_random, c(gs$name, "factor"), gs$map$label, fnames)
     logsd_random <- .summary_rearrange(logsd_random, c(gs$name, "factor"))
-    mu_beta_random <- .summary_rearrange(mu_beta_random, c(gs$name, "factor", "predictor"))
-    logsd_beta_random <- .summary_rearrange(logsd_beta_random, c(gs$name, "factor", "predictor"))
+
+    mu_beta_random <- logsd_beta_random <- NA
+
+    if(P_random > 0) {
+        mu_beta_random <- .summarize(x, pars = "mu_beta_random", prob = prob)
+        mu_beta_random <- .tidy_summary(mu_beta_random, c(gs$name, "predictor", "factor"), gs$map$label, pnames$location[P_random_ind], fnames)
+        mu_beta_random <- .summary_rearrange(mu_beta_random, c(gs$name, "factor", "predictor"))
+    }
+
+    if(Q_random > 0) {
+        logsd_beta_random <- .summarize(x, pars = "logsd_beta_random", prob = prob)
+        logsd_beta_random <- .tidy_summary(logsd_beta_random, c(gs$name, "predictor", "factor"), gs$map$label, pnames$scale[Q_random_ind], fnames)
+        logsd_beta_random <- .summary_rearrange(logsd_beta_random, c(gs$name, "factor", "predictor"))
+    }
 
     out <- nlist(mu_logsd_betas_random_sigma,
                  Omega_mean_logsd,
@@ -251,26 +256,30 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
                  mu_beta_random,
                  logsd_beta_random
                  )
-
     return(out)
 }
 
 .summary_fixef <- function(x, prob) {
     # Meta-data
-    pnames <- x$meta$pred_spec$pname
+    PS <- x$meta$pred_spec
+    pnames <- PS$pname
     fnames <- unlist(x$meta$indicator_spec$fname)
 
-    # Summarize
-    mu_beta <- .summarize(x, pars = "mu_beta", prob = prob)
-    logsd_beta <- .summarize(x, pars = "logsd_beta", prob = prob)
+    mu_beta <- NA
+    logsd_beta <- NA
 
-    # Tidy
-    mu_beta <- .tidy_summary(mu_beta, c("predictor", "factor"), pnames$location, fnames)
-    logsd_beta <- .tidy_summary(logsd_beta, c("predictor", "factor"), pnames$scale, fnames)
+    if(PS$P > 0) {
+        mu_beta <- .summarize(x, pars = "mu_beta", prob = prob)
+        mu_beta <- .tidy_summary(mu_beta, c("predictor", "factor"), pnames$location, fnames)
+        mu_beta <- .summary_rearrange(mu_beta, c("factor", "predictor"))
+    }
 
-    # Rearrange
-    mu_beta <- .summary_rearrange(mu_beta, c("factor", "predictor"))
-    logsd_beta <- .summary_rearrange(logsd_beta, c("factor", "predictor"))
+    if(PS$Q > 0) {
+        logsd_beta <- .summarize(x, pars = "logsd_beta", prob = prob)
+        logsd_beta <- .tidy_summary(logsd_beta, c("predictor", "factor"), pnames$scale, fnames)
+        logsd_beta <- .summary_rearrange(logsd_beta, c("factor", "predictor"))
+        
+    }
 
     out <- nlist(mu_beta, logsd_beta)
     return(out)
@@ -278,22 +287,27 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 
 .summary_between <- function(x, prob) {
     # Meta-data
-    pnames <- x$meta$pred_spec$pname$between
+    PS <- x$meta$pred_spec
+    pnames <- PS$pname$between
     fnames <- unlist(x$meta$indicator_spec$fname)
     F <- x$meta$indicator_spec$F
     re_int_names <- paste0(fnames, "MAGICSEP", rep(c("mu", "logsd"), each = F))
 
-    # Summarize
-    zeta <- .summarize(x, pars = "zeta", prob = prob)
+    zeta <- NA
+    if(PS$R > 0) {
 
-    # Tidy
-    zeta <- .tidy_summary(zeta, c("predictor", "param"), pnames, re_int_names)
+        # Summarize
+        zeta <- .summarize(x, pars = "zeta", prob = prob)
 
-    # Separate
-    zeta[, c("factor", "param")] <- .magicsep(zeta[, "param"], c("factor", "param"))
+        # Tidy
+        zeta <- .tidy_summary(zeta, c("predictor", "param"), pnames, re_int_names)
 
-    # Rearrange
-    zeta <- .summary_rearrange(zeta, c("factor", "param", "predictor"))
+        # Separate
+        zeta[, c("factor", "param")] <- .magicsep(zeta[, "param"], c("factor", "param"))
+
+        # Rearrange
+        zeta <- .summary_rearrange(zeta, c("factor", "param", "predictor"))
+    }
 
     out <- nlist(zeta)
     return(out)
