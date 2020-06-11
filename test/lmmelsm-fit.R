@@ -166,7 +166,7 @@ sOut <- melsm_latent(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5,
                           scale ~ sca_1 + sca_2 | sca_1,
                           between ~ bet_1 + bet_2
                           ## between ~ bet_1
-                          ), subject, d$df, iter = 1000)
+                          ), subject, d$df, iter = 300)
 
 summary(sOut, pars = c("lambda", "nu", "sigma"))$summary
 summary(sOut, pars = c("mu_logsd_betas_random_sigma", "Omega_eta", "Omega_mean_logsd"))$summary
