@@ -271,6 +271,7 @@ melsm_latent <- function(formula, group, data, ...) {
 ##' @param formula Logical. Whether to return the raw RHS (TRUE) or the vars needed (FALSE).
 ##' @return List of lists.
 ##' @author Stephen R. Martin
+##' @keywords internal
 .get_formula_names <- function(flist, formula = TRUE) {
     lhs_names <- lapply(flist, .get_LHS)
     rhs_names <- lapply(flist, .get_RHS, terms = formula)
