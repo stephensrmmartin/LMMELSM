@@ -22,7 +22,7 @@ d <- LMMELSM:::simulate_lmmelsm(
 head(d$df)
 
 ## sOut <- melsm_latent(list(myfactor ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5 + obs_6 + obs_7 + obs_8 + obs_9 + obs_10, location ~ loc_1 + loc_2, scale ~ sca_1 + sca_2), subject, d$df)
-sOut <- melsm_latent(list(myfactor ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5 + obs_6 + obs_7 + obs_8 + obs_9 + obs_10), subject, d$df, iter = 800)
+sOut <- melsm_latent(list(myfactor ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5 + obs_6 + obs_7 + obs_8 + obs_9 + obs_10), subject, d$df, iter = 300)
 summary(sOut, pars = c("lambda", "nu", "sigma"))$summary
 summary(sOut, pars = c("mu_logsd_betas_random_sigma", "Omega_eta", "Omega_mean_logsd"))$summary
 summary(sOut, pars = c("mu_beta","logsd_beta"))$summary
@@ -83,7 +83,7 @@ d <- LMMELSM:::simulate_lmmelsm(
                    epsilon_cor = matrix(1, 1, 1)
                )
 
-sOut <- melsm_latent(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5, location ~ loc_1 + loc_2 | loc_1 + loc_2, scale ~ sca_1 + sca_2 | sca_1 + sca_2), subject, d$df)
+sOut <- melsm_latent(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5, location ~ loc_1 + loc_2 | loc_1 + loc_2, scale ~ sca_1 + sca_2 | sca_1 + sca_2), subject, d$df, iter = 200)
 
 summary(sOut, pars = c("lambda", "nu", "sigma"))$summary
 summary(sOut, pars = c("mu_logsd_betas_random_sigma", "Omega_eta", "Omega_mean_logsd"))$summary
