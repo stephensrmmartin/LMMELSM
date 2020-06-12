@@ -60,3 +60,21 @@ nlist <- function(...) {
     high <- 1 - low
     return(c(low, high))
 }
+
+.extract_transform <- function(s, par = NULL) {
+    cns <- colnames(s)
+    if(!is.matrix(s) & class(s) == "stanfit") {
+        s <- as.matrix(s, pars = par)
+    }
+    S <- nrow(s)
+
+    rexInner <- r"(.*\[(\d+(?:,\d+)*)\])"
+    inner <- gsub(rexInner, "\\1", cns)
+
+    inds <- as.numeric(rbind(strsplit(inner, ",")))
+    inds_max <- apply(inds, 2, max)
+    inds_all <- c(inds_max, S)
+
+    arr <- array(t(s), dim = inds_all)
+    return(arr)
+}
