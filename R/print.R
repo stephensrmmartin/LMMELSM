@@ -467,7 +467,7 @@ print.summary.lmmelsm <- function(x, ...) {
     rownames(corMat) <- colnames(corMat) <- re_names
     print(corMat, digits = digits)
 
-    invisible(object)
+    invisible(x)
 }
 
 .print_table <- function(x, digits, drop = NULL) {
