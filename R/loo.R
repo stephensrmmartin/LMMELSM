@@ -11,6 +11,12 @@ loo.lmmelsm <- function(x, ...) {
     
 }
 
-.log_lik <- function(x) {
+.log_liks <- function(x) {
+    # Extract and transform param samples.
+    etas <- .extract_transform(x$fit, par = "eta")
+    lambdas <- .extract_transform(x$fit, par = "lambda")
+    nus <- .extract_transform(x$fit, par = "nu")
+    sigmas <- .extract_transform(x$fit, par = "sigma")
+
     
 }
