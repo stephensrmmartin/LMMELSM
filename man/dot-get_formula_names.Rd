@@ -20,3 +20,4 @@ Get names in formula.
 \author{
 Stephen R. Martin
 }
+\keyword{internal}

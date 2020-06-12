@@ -30,7 +30,7 @@
 ##' @param group Raw grouping variable name (not character).
 ##' @param data Data frame.
 ##' @param ... Options passed onto \code{\link[rstan]{sampling}}
-##' @return melsm_latent object.
+##' @return lmmelsm object.
 ##' @author Stephen R. Martin
 ##' @import rstan
 ##' @importFrom parallel detectCores
@@ -75,9 +75,17 @@ melsm_latent <- function(formula, group, data, ...) {
               "Omega_mean_logsd")
     stan_args$pars <- pars
 
-    sOut <- do.call(sampling, c(stan_args, dots))
+    sOut <- suppressWarnings(do.call(sampling, c(stan_args, dots)))
 
-    return(sOut)
+    out <- list(fit = sOut,
+                meta = d$meta,
+                data = d$data,
+                stan_data = d$stan_data
+                )
+
+    class(out) <- "lmmelsm"
+
+    return(out)
 
 }
 
@@ -146,6 +154,8 @@ melsm_latent <- function(formula, group, data, ...) {
                        data = mf[, group_name],
                        numeric = as.numeric(as.factor(mf[, group_name])),
                        K = length(unique(mf[, group_name])))
+    group_spec$map <- data.frame(numeric = 1:group_spec$K,
+                                 label = group_spec$data[match(1:group_spec$K, group_spec$numeric)])
     out$meta$group_spec <- group_spec
     out$stan_data$group <- group_spec$numeric
     out$stan_data$K <- group_spec$K
@@ -158,6 +168,7 @@ melsm_latent <- function(formula, group, data, ...) {
     out$meta$indicator_spec$fname <- mlistNames$factor
     out$meta$indicator_spec$iname <- mlistNames$indicator
     out$meta$indicator_spec$mname <- colnames(indicator_spec$y)
+    out$meta$indicator_spec$mlist <- mlist
     out$stan_data <- c(out$stan_data, indicator_spec)
 
     # Predictor matrices
@@ -165,6 +176,7 @@ melsm_latent <- function(formula, group, data, ...) {
     plistNames <- .get_formula_names(plist)
     out$meta$pred_spec <- pred_spec
     out$meta$pred_spec$pname <- plistNames$indicator
+    out$meta$pred_spec$plist <- plist
     out$stan_data <- c(out$stan_data, pred_spec)
 
     # Misc
@@ -259,6 +271,7 @@ melsm_latent <- function(formula, group, data, ...) {
 ##' @param formula Logical. Whether to return the raw RHS (TRUE) or the vars needed (FALSE).
 ##' @return List of lists.
 ##' @author Stephen R. Martin
+##' @keywords internal
 .get_formula_names <- function(flist, formula = TRUE) {
     lhs_names <- lapply(flist, .get_LHS)
     rhs_names <- lapply(flist, .get_RHS, terms = formula)
