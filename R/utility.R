@@ -78,3 +78,8 @@ nlist <- function(...) {
     arr <- array(t(s), dim = inds_all)
     return(arr)
 }
+
+.ones <- function(x) {
+    out <- matrix(1, x, 1)
+    return(out)
+}
