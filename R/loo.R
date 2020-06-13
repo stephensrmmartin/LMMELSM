@@ -69,7 +69,8 @@ loo.lmmelsm <- function(x, type = c("observation", "group"), ...) {
     # Predictions
     preds <- array(0, dim = c(N, J, S))
     for(s in seq_len(S)) {
-        preds[,, s] <- .ones(N) %*% t(nus[, s]) + etas[,, s] %*% lambdas[,, s]
+        ## preds[,, s] <- .ones(N) %*% t(nus[, s]) + etas[,, s] %*% lambdas[,, s]
+        preds[,, s] <- .ones(N) %*% t(nus[, s]) + .array_extract(etas, s) %*% .array_extract(lambdas, s)
     }
 
     # Likelihoods
