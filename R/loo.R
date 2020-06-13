@@ -18,9 +18,9 @@ loo.lmmelsm <- function(x, type = c("observation", "group"), ...) {
 
     ll <- ll_fun(ll, x)
 
-    ## r_eff <- loo::relative_eff(exp(ll))
-    ## looOut <- loo::loo(ll, r_eff = r_eff)
-    looOut <- loo::loo(ll)
+    chain_id <- rep(1:x$stan_args$chains, each = x$stan_args$iter - x$fit@stan_args[[1]]$warmup)
+    r_eff <- loo::relative_eff(exp(ll), chain_id = chain_id)
+    looOut <- loo::loo(ll, r_eff = r_eff)
 
     return(looOut)
 }
