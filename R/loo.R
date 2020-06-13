@@ -1,6 +1,7 @@
 
 ##' @title loo method for LMMELSM objects.
 ##' @param x lmmelsm object.
+##' @param type String (Default: "observation"). If "observation", then loo is leave-row-out. If "group", then loo is leave-group-out.
 ##' @param ... Not used.
 ##' @return loo object.
 ##' @author Stephen R. Martin
