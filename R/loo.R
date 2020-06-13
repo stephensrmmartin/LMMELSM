@@ -8,6 +8,7 @@
 ##' @export loo
 ##' @export
 loo.lmmelsm <- function(x, type = c("observation", "group"), ...) {
+    type <- match.arg(type)
 
     ll <- .log_liks(x)
 
@@ -16,6 +17,12 @@ loo.lmmelsm <- function(x, type = c("observation", "group"), ...) {
                      group = .ll_group)
 
     ll <- ll_fun(ll, x)
+
+    ## r_eff <- loo::relative_eff(exp(ll))
+    ## looOut <- loo::loo(ll, r_eff = r_eff)
+    looOut <- loo::loo(ll)
+
+    return(looOut)
 }
 
 .ll_obs <- function(ll, ...) {
