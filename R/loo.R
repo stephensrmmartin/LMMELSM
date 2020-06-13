@@ -48,8 +48,8 @@ loo.lmmelsm <- function(x, type = c("observation", "group"), ...) {
     out <- tapply(N_seq, gn, function(x) {
         colSums(ll_obs[x,])
     }, simplify = FALSE) # K-length list; ordered by 1:K
-    out <- do.call(rbind, out) # N x S
-    out <- t(out)  # S x N
+    out <- do.call(rbind, out) # K x S
+    out <- t(out)  # S x K
 
     return(out)
 }
