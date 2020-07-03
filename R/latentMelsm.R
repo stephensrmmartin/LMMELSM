@@ -80,7 +80,8 @@ melsm_latent <- function(formula, group, data, ...) {
     out <- list(fit = sOut,
                 meta = d$meta,
                 data = d$data,
-                stan_data = d$stan_data
+                stan_data = d$stan_data,
+                stan_args = stan_args
                 )
 
     class(out) <- "lmmelsm"
