@@ -146,7 +146,7 @@ melsm_latent <- function(formula, group, data, ...) {
 
     if(removed_N >= 1) {
         mf <- mf[-removed_ind,]
-        warning("Removing", removed_N, "incomplete cases.")
+        warning("Removing ", removed_N, " incomplete cases.")
     }
     out$data = mf
 
