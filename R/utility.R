@@ -68,7 +68,8 @@ nlist <- function(...) {
     cns <- colnames(s)
     S <- nrow(s)
 
-    rexInner <- r"(.*\[(\d+(?:,\d+)*)\])"
+    ## rexInner <- r"(.*\[(\d+(?:,\d+)*)\])" # R < 4.0 breaks
+    rexInner <-  ".*\\[(\\d+(?:,\\d+)*)\\]"
     inner <- gsub(rexInner, "\\1", cns)
 
     inds <- apply(do.call(rbind, strsplit(inner, ",")), 2, as.numeric)
