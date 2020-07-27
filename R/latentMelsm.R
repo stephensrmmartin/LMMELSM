@@ -98,7 +98,7 @@ melsm_latent <- function(formula, group, data, ...) {
 ##' @author Stephen R. Martin
 ##' @import Formula
 ##' @keywords internal
-.parse_formula <- function(formulaList, group, data, observed = FALSE) {
+.parse_formula <- function(formulaList, group, data) {
     # Make it a list of formulas
     if(!is.list(formulaList)) {
         flist <- list(formulaList)
@@ -112,6 +112,12 @@ melsm_latent <- function(formula, group, data, ...) {
     # Convert to Formula::Formula
     flist <- lapply(flist, as.Formula)
     names(flist) <- sapply(flist, .get_LHS)
+
+    # Detected observedness
+    observed <- FALSE
+    if("observed" %in% tolower(names(flist))) {
+        observed <- TRUE
+    }
 
     # Separate location/scale formulas from measurement formulas.
     ## mlist: List of measurement factor formulas
