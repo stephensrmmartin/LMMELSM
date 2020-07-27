@@ -98,7 +98,7 @@ melsm_latent <- function(formula, group, data, ...) {
 ##' @author Stephen R. Martin
 ##' @import Formula
 ##' @keywords internal
-.parse_formula <- function(formulaList, group, data) {
+.parse_formula <- function(formulaList, group, data, observed = FALSE) {
     # Make it a list of formulas
     if(!is.list(formulaList)) {
         flist <- list(formulaList)
@@ -163,14 +163,27 @@ melsm_latent <- function(formula, group, data, ...) {
 
 
     # Get indicator matrix
-    indicator_spec <- .parse_formula.indicators(mlist, mf)
-    mlistNames <- .get_formula_names(mlist, formula = TRUE)
-    out$meta$indicator_spec <- indicator_spec
-    out$meta$indicator_spec$fname <- mlistNames$factor
-    out$meta$indicator_spec$iname <- mlistNames$indicator
-    out$meta$indicator_spec$mname <- colnames(indicator_spec$y)
-    out$meta$indicator_spec$mlist <- mlist
-    out$stan_data <- c(out$stan_data, indicator_spec)
+    if(observed) {
+        indicator_spec <- .parse_formula.observed(mlist, mf)
+        mlistNames <- .get_formula_names(mlist, formula = TRUE)
+        out$meta$indicator_spec <- indicator_spec
+        out$meta$latent <- FALSE
+        out$meta$indicator_spec$fname <- mlistNames$indicator
+        out$meta$indicator_spec$iname <- mlistNames$indicator
+        out$meta$indicator_spec$mname <- mlistNames$indicator
+        out$meta$indicator_spec$mlist <- mlist
+        out$stan_data <- c(out$stan_data, indicator_spec)
+    } else {
+        indicator_spec <- .parse_formula.indicators(mlist, mf)
+        mlistNames <- .get_formula_names(mlist, formula = TRUE)
+        out$meta$latent <- TRUE
+        out$meta$indicator_spec <- indicator_spec
+        out$meta$indicator_spec$fname <- mlistNames$factor
+        out$meta$indicator_spec$iname <- mlistNames$indicator
+        out$meta$indicator_spec$mname <- colnames(indicator_spec$y)
+        out$meta$indicator_spec$mlist <- mlist
+        out$stan_data <- c(out$stan_data, indicator_spec)
+    }
 
     # Predictor matrices
     pred_spec <- .parse_formula.predictor(plist, mf, group_spec$data)
@@ -204,6 +217,26 @@ melsm_latent <- function(formula, group, data, ...) {
                  F = length(mlist),
                  N = nrow(mm)
                  )
+    return(out)
+}
+
+.parse_formula.observed <- function(mlist, mf) {
+    mlist_RHS <- .combine_RHS(mlist)
+    mm <- model.matrix(mlist_RHS, mf)[, -1]
+
+    J <- ncol(mm)
+    `F` <- J
+    J_f <- rep(1, `F`)
+    F_ind <- matrix(0, `F`, J)
+    F_ind[,1] <- seq_len(J)
+
+    out <- nlist(y = mm,
+                 J_f,
+                 F_ind,
+                 J,
+                 `F`,
+                 N = nrow(mm))
+
     return(out)
 }
 
