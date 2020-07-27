@@ -32,7 +32,7 @@
 ##' @param ... Options passed onto \code{\link[rstan]{sampling}}
 ##' @return lmmelsm object.
 ##' @author Stephen R. Martin
-##' @import rstan
+##' @rawNamespace import(rstan, except = loo)
 ##' @importFrom parallel detectCores
 ##' @export
 melsm_latent <- function(formula, group, data, ...) {
