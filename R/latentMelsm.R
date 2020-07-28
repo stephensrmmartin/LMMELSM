@@ -76,6 +76,9 @@ melsm_latent <- function(formula, group, data, ...) {
               "mu_logsd_betas_random_sigma",
               "Omega_eta",
               "Omega_mean_logsd")
+    if(!d$meta$latent) {
+        pars <- pars[-2] # Remove lambda
+    }
     stan_args$pars <- pars
 
     sOut <- suppressWarnings(do.call(sampling, c(stan_args, dots)))
