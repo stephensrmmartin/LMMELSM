@@ -55,7 +55,7 @@ melsm_latent <- function(formula, group, data, ...) {
 
     stan_args$object <- stanmodels$lmmelsmPred
     if(!d$meta$latent) {
-        stan_args$object <- stanmodels$lmmelsmPredObs
+        stan_args$object <- stanmodels$lmmelsmPredObs2
     }
     stan_args$data <- d$stan_data
     stan_args$data$prior_only <- stan_args$prior_only
