@@ -97,10 +97,15 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     out$meta$stan <- list()
     out$meta$stan$date <- object$fit@date
     out$meta$stan$elapsed <- rstan::get_elapsed_time(object$fit)
-    out$meta$stan$diag <- .get_diagnostics(object$fit)
+    out$meta$stan$diag <- .get_diagnostics(object)
 
-    # Measurement model.
-    out$summary[c("lambda", "sigma", "nu")] <- .summary_measurement(object, prob)
+    latent <- object$meta$latent
+    if(latent) {
+        # Measurement model.
+        out$summary[c("lambda", "sigma", "nu")] <- .summary_measurement(object, prob)
+    } else {
+        out$summary[c("sigma", "nu")] <- .summary_observed(object, prob)
+    }
 
     # Random effects
     out$summary[c("mu_logsd_betas_random_sigma",
@@ -167,6 +172,26 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     nu <- .summary_rearrange(nu, "item")
 
     out <- nlist(lambda, sigma, nu)
+    return(out)
+}
+
+.summary_observed <- function(x, prob) {
+    # Meta-data
+    ind_names <- x$meta$indicator_spec$mname
+
+    # Summarize
+    sigma <- .summarize(x, pars = "sigma", prob = prob)
+    nu <- .summarize(x, pars = "nu", prob = prob)
+
+    # Tidy
+    sigma <- .tidy_summary(sigma, "item", ind_names)
+    nu <- .tidy_summary(nu, "item", ind_names)
+
+    # Rearrange
+    sigma <- .summary_rearrange(sigma, "item")
+    nu <- .summary_rearrange(nu, "item")
+
+    out <- nlist(sigma, nu)
     return(out)
 }
 
@@ -334,6 +359,8 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 print.summary.lmmelsm <- function(x, ...) {
     dots <- list(...)
     digits <- dots$digits %IfNull% x$meta$digits
+    latent <- x$meta$latent
+    facVarStr <- ifelse(latent, "Factor", "Variable") # To avoid some ifelses down the line
 
     # Diagnostics
     .sep()
@@ -341,46 +368,56 @@ print.summary.lmmelsm <- function(x, ...) {
     .sep()
     .newline()
     .print.lmmelsm_diag(x$meta$stan$diag)
+    .sep()
 
-    # Measurement model
     IS <- x$meta$indicator_spec
-    .sep()
-    cat("Measurement Model")
-    .sep()
-    .newline()
+    if(latent) {
+        # Measurement model
+        .sep()
+        cat("Measurement Model")
+        .sep()
+        .newline()
 
-    ## Loadings
-    cat("Loadings")
-    .newline()
-    for(f in 1:IS$F) {
-        cat("Factor: ")
-        cat(IS$fname[[f]])
+        ## Loadings
+        cat("Loadings")
         .newline()
-        with(x$summary, .print_table(lambda[lambda$factor == IS$fname[[f]] & lambda$item %in% IS$iname[[f]], ], digits, "factor"))
+        for(f in 1:IS$F) {
+            cat("Factor: ")
+            cat(IS$fname[[f]])
+            .newline()
+            with(x$summary, .print_table(lambda[lambda$factor == IS$fname[[f]] & lambda$item %in% IS$iname[[f]], ], digits, "factor"))
+            .newline()
+        }
+
+        ## Residual SD
         .newline()
+        cat("Residual Standard Deviation")
+        .newline()
+        with(x$summary, .print_table(sigma, digits))
+
+        ## Intercepts
+        .newline()
+        cat("Intercepts")
+        .newline()
+        with(x$summary, .print_table(nu, digits))
     }
-
-    ## Residual SD
-    .newline()
-    cat("Residual Standard Deviation")
-    .newline()
-    with(x$summary, .print_table(sigma, digits))
-
-    ## Intercepts
-    .newline()
-    cat("Intercepts")
-    .newline()
-    with(x$summary, .print_table(nu, digits))
-
+    
     # Factor Cors
     if(IS$F > 1) {
         .newline()
-        cat("Factor correlations")
+        cat(facVarStr, "correlations")
         .newline()
         with(x$summary, .print_table(Omega_eta, digits))
     }
 
     # Location model
+    if(!latent) {
+        .sep()
+        cat("Location Intercepts")
+        .sep()
+        .newline()
+        with(x$summary, .print_table(nu, digits))
+    }
     if(x$meta$pred_spec$P > 0) {
         PS <- x$meta$pred_spec
         .sep()
@@ -388,7 +425,7 @@ print.summary.lmmelsm <- function(x, ...) {
         .sep()
         .newline()
         for(f in 1:IS$F) {
-            cat("Factor: ")
+            cat(facVarStr, ": ")
             cat(IS$fname[[f]])
             .newline()
             with(x$summary, .print_table(mu_beta[mu_beta$factor == IS$fname[[f]], ], digits, "factor"))
@@ -397,6 +434,13 @@ print.summary.lmmelsm <- function(x, ...) {
     }
 
     # Scale model
+    if(!latent) {
+        .sep()
+        cat("(Log) Scale Intercepts")
+        .sep()
+        .newline()
+        with(x$summary, .print_table(sigma, digits))
+    }
     if(x$meta$pred_spec$Q > 0) {
         PS <- x$meta$pred_spec
         .sep()
@@ -404,7 +448,7 @@ print.summary.lmmelsm <- function(x, ...) {
         .sep()
         .newline()
         for(f in 1:IS$F) {
-            cat("Factor: ")
+            cat(facVarStr, ": ")
             cat(IS$fname[[f]])
             .newline()
             with(x$summary, .print_table(logsd_beta[logsd_beta$factor == IS$fname[[f]], ], digits, "factor"))
@@ -420,7 +464,7 @@ print.summary.lmmelsm <- function(x, ...) {
         .sep()
         .newline()
         for(f in 1:IS$F) {
-            cat("Factor: ")
+            cat(facVarStr, ": ")
             cat(IS$fname[[f]])
             .newline()
             with(x$summary, .print_table(zeta[zeta$factor == IS$fname[[f]], ], digits, "factor"))
@@ -638,12 +682,13 @@ print.summary.lmmelsm <- function(x, ...) {
     tree_iter <- rstan::get_max_treedepth_iterations(fit)
 
     # TODO: Limit this to parameters; not eta{_logsd}
-    pars <- c("lambda", "sigma", "nu",
+    pars <- c("sigma", "nu",
               "mu_logsd_betas_random_sigma", "Omega_mean_logsd",
               "mu_random", "logsd_random", "mu_beta_random", "logsd_beta_random",
               "mu_beta", "logsd_beta",
               "zeta",
               "Omega_eta")
+    if(latent) pars <- c(pars, "lambda")
     rhat <- rstan::summary(fit, pars = pars)$summary[,"Rhat"]
     rhat <- rhat[!is.na(rhat)]
     rhat_sorted <- sort(rhat, decreasing = TRUE)
