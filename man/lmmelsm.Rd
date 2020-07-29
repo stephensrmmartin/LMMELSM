@@ -29,6 +29,7 @@ Excludes rows with missing data.
 The Stan model currently uses the unit-variance identification.
 
 \section{Model specification}
+
 The model is specified as a list of formulas.
 LMMELSM supports the specification of latent measurement models, location models, scale models, between-group scale models, and (if latent variables are undesired) observed outcome models.
 The covariates do not need to be the same across the location, scale, and between-group models.
