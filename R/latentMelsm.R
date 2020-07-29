@@ -7,6 +7,7 @@
 ##' The Stan model currently uses the unit-variance identification.
 ##'
 ##' \section{Model specification}
+##' 
 ##' The model is specified as a list of formulas.
 ##' LMMELSM supports the specification of latent measurement models, location models, scale models, between-group scale models, and (if latent variables are undesired) observed outcome models.
 ##' The covariates do not need to be the same across the location, scale, and between-group models.
@@ -221,9 +222,9 @@ lmmelsm <- function(formula, group, data, ...) {
         mlistNames <- .get_formula_names(mlist, formula = TRUE)
         out$meta$indicator_spec <- indicator_spec
         out$meta$latent <- FALSE
-        out$meta$indicator_spec$fname <- mlistNames$indicator
+        out$meta$indicator_spec$fname <- as.list(mlistNames$indicator$observed)
         out$meta$indicator_spec$iname <- mlistNames$indicator
-        out$meta$indicator_spec$mname <- mlistNames$indicator
+        out$meta$indicator_spec$mname <- mlistNames$indicator$observed
         out$meta$indicator_spec$mlist <- mlist
         out$stan_data <- c(out$stan_data, indicator_spec)
     } else {
