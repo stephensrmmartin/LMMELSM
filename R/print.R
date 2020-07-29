@@ -624,7 +624,10 @@ print.summary.lmmelsm <- function(x, ...) {
     }
 }
 
-.get_diagnostics <- function(fit) {
+.get_diagnostics <- function(object) {
+    fit <- object$fit
+    latent <- object$meta$latent
+
     bfmi <- rstan::get_bfmi(fit)
     bfmi_chains <- rstan::get_low_bfmi_chains(fit)
 
