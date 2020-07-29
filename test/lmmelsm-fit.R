@@ -177,8 +177,11 @@ head(sort(summary(sOut)$summary[,"Rhat"], decreasing = TRUE), 40)
 # Testing with 'observed' etas.
 library(rstan)
 
-stan_data <- d$data
-stan_data$eta_y <- d$params$eta
-stan_data$P_random_ind <- array(stan_data$P_random_ind, dim = 1)
-stan_data$Q_random_ind <- array(stan_data$Q_random_ind, dim = 1)
-sOut <- sampling(LMMELSM:::stanmodels$lmmelsmPredObs, data = stan_data, cores = 4, iter = 1000, init = 0)
+df <- d$df
+df[, paste0("eta.", 1:ncol(d$params$eta))] <- d$params$eta
+
+sOut <- lmmelsm(list(observed ~ eta.1 + eta.2,
+                     location ~ loc_1 + loc_2 | loc_1,
+                     scale ~ sca_1 + sca_2 | sca_1,
+                     between ~ bet_1 + bet_2),
+                subject, df, iter = 1000)
