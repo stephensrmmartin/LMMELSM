@@ -158,7 +158,7 @@ d <- LMMELSM:::simulate_lmmelsm(
                    ## X_bet = cbind(rep(0:1, each = 50*100/2), rep(1:0, each = 50*100/2))
                )
 
-sOut <- melsm_latent(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5,
+sOut <- lmmelsm(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5,
                           factor2 ~ obs_6 + obs_7 + obs_8 + obs_9 + obs_10,
                           ## location ~ loc_1 + loc_2,
                           location ~ loc_1 + loc_2 | loc_1,
@@ -180,7 +180,7 @@ library(rstan)
 df <- d$df
 df[, paste0("eta.", 1:ncol(d$params$eta))] <- d$params$eta
 
-sOut <- lmmelsm(list(observed ~ eta.1 + eta.2,
+sOut.obs <- lmmelsm(list(observed ~ eta.1 + eta.2,
                      location ~ loc_1 + loc_2 | loc_1,
                      scale ~ sca_1 + sca_2 | sca_1,
                      between ~ bet_1 + bet_2),
