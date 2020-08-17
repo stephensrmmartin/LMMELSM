@@ -1,30 +1,74 @@
 ##' Fits a MELSM on latent variables.
 ##'
-##' Currently supports multiple latent factors, exogenous, and exogenous variables.
-##' Data are assumed to be two-level data. I.e., multiple indicators, repeatedly measured within person.
+##' Currently supports multiple endogenous latent factors  and exogenous observed variables.
+##' Data are assumed to be two-level data. I.e., multiple indicators, repeatedly measured within group.
 ##' Currently assumes measurement invariance (i.e., the measurement model params are equivalent across groups).
 ##' Excludes rows with missing data.
 ##' The Stan model currently uses the unit-variance identification.
 ##'
-##' Formulas should be of the form:
+##' \section{Model specification}
+##' 
+##' The model is specified as a list of formulas.
+##' LMMELSM supports the specification of latent measurement models, location models, scale models, between-group scale models, and (if latent variables are undesired) observed outcome models.
+##' The covariates do not need to be the same across the location, scale, and between-group models.
+##' The specified covariates will be used to predict the location and scale of \emph{all} latent factors via multivariate regression.
+##' 
+##' The latent factor model is specified as follows.
+##' In the simplest case, only one formula is required, and a single-factor model is estimated.
+##' The left-hand side (LHS) contains the user-specified latent variable name, and the right-hand side (RHS) contains the indicators.
+##' Let "latent1" and "latent2" be user-chosen names of two latent variables with three indicators each.
+##' Then the formula syntax would be:
+##' \code{list(latent1 ~ y1 + y2 + y3, latent2 ~ y4 + y5 + y6)}
 ##'
-##' \code{latentName ~ indicator1 + indicator2 + indicator3},
-##' where \code{latentName} is the name of the latent variable.
-##' The right-hand side (RHS) should contain the variables in \code{data} onto which the factor loads.
-##' In the simplest case, only one formula is required. This defines a single-factor model.
-##' If multiple latent factors are desired, a list of formulas can be provided.
 ##'
-##' To predict the latent locations and scales, include the respective formulas in the list of formulas.
-##' For example:
+##' The location model is specified as either a one or two-part formula.
+##' The LHS must be "location" and the RHS contains the covariates.
+##' Random slopes are specified in the optional second part, separated by "|".
+##' Because LMMELSM fits MELSMs, random intercepts are \emph{always} included.
+##' For example, if x1 and x2 are two location predictors, then:
 ##' 
 ##' \code{location ~ x1 + x2}
-##' \code{scale ~ x1 + x2}
 ##'
-##' The covariates do not need to be the same across the location and scale.
-##' The specified covariates will be used to predict the location and scale of \emph{all} latent factors via multivariate regression.
+##' specifies a location model with a random intercept per factor, and no random slopes.
 ##'
-##' \emph{Note}: Because \code{location} and \code{scale} represent special formulas, latent factors cannot be called location or scale.
-##' It is assumed that any formula with \code{location} or \code{scale} on the left-hand side (LHS) is a predictive formula, not a latent variable specification.
+##' \code{location ~ x1 + x2 | x1}
+##'
+##' specifies a location model with a random intercept per factor, a random x1 coefficient per factor, and no random x2 coefficient.
+##'
+##' The within-group scale model is specified similarly.
+##' The LHS must be "scale" and the RHS contains the covariates.
+##' Random intercepts are always included, and random slopes are specified in the optional second part of the RHS.
+##' For example, if x2 and x3 are two scale predictors, then:
+##'
+##' \code{scale ~ x2 + x3}
+##'
+##' specifies a scale model with a random intercept per factor, and no random slopes.
+##'
+##' \code{scale ~ x2 + x3 | x3}
+##'
+##' specifies a scale model with a random intercept perfactor, a random x3 coefficient per factor, and no random x2 coefficient.
+##'
+##' The between-group scale model is specified by a LHS of "between" and RHS containing covariates.
+##' There are no random coefficients permitted in the between-group scale model.
+##' The between-group scale model is responsible for modeling the random effect standard deviations.
+##' \emph{Note:} The between-group model \emph{only} models the SDs of the random location and scale \emph{intercepts}.
+##'
+##' \code{between ~ x2}
+##'
+##' specifies a between-group scale model on the SDs of the location and scale intercepts for each factor.
+##'
+##' If you want to fit a non-latent multivariate MELSM, you can now do so using new formula syntax:
+##'
+##' For example, if y1, y2, and y3 are three observed outcome variables, then
+##' 
+##' \code{observed ~ y1 + y2 + y3}
+##'
+##' would fit an M-MELSM.
+##' Location, scale, and between-group models can still be specified, but they will model the observed variables, rather than latent variables.
+##' You cannot currently have both observed and latent variables in the same model.
+##'
+##' \emph{Note}: Because \code{location}, \code{scale}, \code{between}, and \code{observed} represent special formulas, latent factors cannot be named location, scale, between, nor observed.
+##' It is assumed that any formula with \code{location}, \code{scale}, or \code{between} on the left-hand side (LHS) is a predictive formula, not a latent variable specification.
 ##' @title Fit two-level latent MELSM.
 ##' @param formula Formula or list of formulas. LHS of each should be factor name, RHS should be indicators.
 ##' @param group Raw grouping variable name (not character).
@@ -35,9 +79,7 @@
 ##' @rawNamespace import(rstan, except = loo)
 ##' @importFrom parallel detectCores
 ##' @export
-melsm_latent <- function(formula, group, data, ...) {
-    # TODO: Add default sampling handling
-    # TODO: For a package, make sure to use stanmodels list instead.
+lmmelsm <- function(formula, group, data, ...) {
     # Set defaults
     dots <- list(...)
     stan_args <- list()
@@ -54,6 +96,9 @@ melsm_latent <- function(formula, group, data, ...) {
     d <- .parse_formula(formula, group = substitute(group), data)
 
     stan_args$object <- stanmodels$lmmelsmPred
+    if(!d$meta$latent) {
+        stan_args$object <- stanmodels$lmmelsmPredObs2
+    }
     stan_args$data <- d$stan_data
     stan_args$data$prior_only <- stan_args$prior_only
     stan_args$prior_only <- NULL
@@ -73,6 +118,9 @@ melsm_latent <- function(formula, group, data, ...) {
               "mu_logsd_betas_random_sigma",
               "Omega_eta",
               "Omega_mean_logsd")
+    if(!d$meta$latent) {
+        pars <- pars[-2] # Remove lambda
+    }
     stan_args$pars <- pars
 
     sOut <- suppressWarnings(do.call(sampling, c(stan_args, dots)))
@@ -112,6 +160,12 @@ melsm_latent <- function(formula, group, data, ...) {
     # Convert to Formula::Formula
     flist <- lapply(flist, as.Formula)
     names(flist) <- sapply(flist, .get_LHS)
+
+    # Detected observedness
+    observed <- FALSE
+    if("observed" %in% tolower(names(flist))) {
+        observed <- TRUE
+    }
 
     # Separate location/scale formulas from measurement formulas.
     ## mlist: List of measurement factor formulas
@@ -163,14 +217,27 @@ melsm_latent <- function(formula, group, data, ...) {
 
 
     # Get indicator matrix
-    indicator_spec <- .parse_formula.indicators(mlist, mf)
-    mlistNames <- .get_formula_names(mlist, formula = TRUE)
-    out$meta$indicator_spec <- indicator_spec
-    out$meta$indicator_spec$fname <- mlistNames$factor
-    out$meta$indicator_spec$iname <- mlistNames$indicator
-    out$meta$indicator_spec$mname <- colnames(indicator_spec$y)
-    out$meta$indicator_spec$mlist <- mlist
-    out$stan_data <- c(out$stan_data, indicator_spec)
+    if(observed) {
+        indicator_spec <- .parse_formula.observed(mlist, mf)
+        mlistNames <- .get_formula_names(mlist, formula = TRUE)
+        out$meta$indicator_spec <- indicator_spec
+        out$meta$latent <- FALSE
+        out$meta$indicator_spec$fname <- as.list(mlistNames$indicator$observed)
+        out$meta$indicator_spec$iname <- mlistNames$indicator
+        out$meta$indicator_spec$mname <- mlistNames$indicator$observed
+        out$meta$indicator_spec$mlist <- mlist
+        out$stan_data <- c(out$stan_data, indicator_spec)
+    } else {
+        indicator_spec <- .parse_formula.indicators(mlist, mf)
+        mlistNames <- .get_formula_names(mlist, formula = TRUE)
+        out$meta$latent <- TRUE
+        out$meta$indicator_spec <- indicator_spec
+        out$meta$indicator_spec$fname <- mlistNames$factor
+        out$meta$indicator_spec$iname <- mlistNames$indicator
+        out$meta$indicator_spec$mname <- colnames(indicator_spec$y)
+        out$meta$indicator_spec$mlist <- mlist
+        out$stan_data <- c(out$stan_data, indicator_spec)
+    }
 
     # Predictor matrices
     pred_spec <- .parse_formula.predictor(plist, mf, group_spec$data)
@@ -204,6 +271,26 @@ melsm_latent <- function(formula, group, data, ...) {
                  F = length(mlist),
                  N = nrow(mm)
                  )
+    return(out)
+}
+
+.parse_formula.observed <- function(mlist, mf) {
+    mlist_RHS <- .combine_RHS(mlist)
+    mm <- model.matrix(mlist_RHS, mf)[, -1]
+
+    J <- ncol(mm)
+    `F` <- J
+    J_f <- rep(1, `F`)
+    F_ind <- matrix(0, `F`, J)
+    F_ind[,1] <- seq_len(J)
+
+    out <- nlist(y = mm,
+                 J_f,
+                 F_ind,
+                 J,
+                 `F`,
+                 N = nrow(mm))
+
     return(out)
 }
 
