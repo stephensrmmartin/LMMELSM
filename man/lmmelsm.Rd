@@ -27,8 +27,9 @@ Data are assumed to be two-level data. I.e., multiple indicators, repeatedly mea
 Currently assumes measurement invariance (i.e., the measurement model params are equivalent across groups).
 Excludes rows with missing data.
 The Stan model currently uses the unit-variance identification.
+}
+\section{Model specification}{
 
-\section{Model specification}
 
 The model is specified as a list of formulas.
 LMMELSM supports the specification of latent measurement models, location models, scale models, between-group scale models, and (if latent variables are undesired) observed outcome models.
@@ -91,6 +92,7 @@ You cannot currently have both observed and latent variables in the same model.
 \emph{Note}: Because \code{location}, \code{scale}, \code{between}, and \code{observed} represent special formulas, latent factors cannot be named location, scale, between, nor observed.
 It is assumed that any formula with \code{location}, \code{scale}, or \code{between} on the left-hand side (LHS) is a predictive formula, not a latent variable specification.
 }
+
 \author{
 Stephen R. Martin
 }
