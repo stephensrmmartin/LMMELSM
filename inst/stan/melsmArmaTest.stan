@@ -90,6 +90,8 @@ transformed parameters {
   // Innovations
 
   // ARMA Location (No cross-lags, so element-wise coef multiplication)
+  // When RE are implemented: This must be changed to understand obs. within groups.
+  // E.g., should be a counter that resets; treat each group as new dataset.
   for(n in 2:N) {
     // AR
     for(lag in 1:min(AR_P, n - 1)) {
