@@ -61,16 +61,74 @@ parameters {
   // When REs are introduced: This is going to be hard. Each group's AR coef must be [0,1]; 
   // May want to use a logistic-RE model then; ar_coef[k] = inv_logit(fe + u[k])
   // And when cross-lags are allowed, then the SUM must be [0, 1], I think.
+  // Unsure about constraint on the log-sd models though; those are multiplicative.
   /* matrix[F, F] ar_location[AR_P]; */
-  row_vector[F] ar_location[AR_P];
-  row_vector[F] ma_location[MA_P];
+  row_vector<lower=0, upper=1>[F] ar_location[AR_P];
+  row_vector<lower=0, upper=1>[F] ma_location[MA_P];
   row_vector[F] ar_scale[AR_Q];
   row_vector[F] ma_scale[MA_Q];
+  matrix[N, F] var_innovation_z;
+  row_vector<lower=0>[F] var_innovation_sd;
+  /* cholesky_factor_corr[F] var_innovation_cor; */ // Test this later!
 
   // Error Cor
-  cholesky_factor_corr[F] epsilon_cor;
+  cholesky_factor_corr[F] epsilon_cor_L;
 
   // Auxilliary parameters
   
 }
 
+transformed parameters {
+  matrix[N, F] var_innovation = diag_post_multiply(var_innovation_z, var_innovation_sd);
+
+  // FE
+  matrix[N, F] mu_hat = rep_matrix(nu, N) + x_loc * mu_beta;
+  matrix[N, F] logsd_hat = rep_matrix(sigma, N) + x_sca * logsd_beta;
+  logsd_hat += var_innovation;
+  // RE
+
+  // Innovations
+
+  // ARMA Location (No cross-lags, so element-wise coef multiplication)
+  for(n in 2:N) {
+    // AR
+    for(lag in 1:min(AR_P, n - 1)) {
+      mu_hat[n] += y[n-lag] .* ar_location[lag];
+    }
+    // MA
+    for(lag in 1:min(MA_P, n - 1)) {
+      mu_hat[n] += (y[n - lag] - mu_hat[n - lag]) .* ma_location[lag];
+    }
+  }
+  // ARMA Scale
+  for(n in 2:N) {
+    // AR
+    for(lag in 1:min(AR_Q, n - 1)) {
+      logsd_hat[n] += logsd_hat[n - lag] .* ar_scale[lag];
+    }
+    // MA
+    for(lag in 1:min(MA_Q, n - 1)) {
+      logsd_hat[n] += var_innovation[n - lag] .* ma_scale[lag];
+    }
+  }
+}
+
+model {
+  nu ~ std_normal();
+  sigma ~ std_normal();
+  mu_beta ~ std_normal();
+  logsd_beta ~ std_normal();
+
+  ar_location ~ std_normal();
+  ma_location ~ std_normal();
+  ar_scale ~ std_normal();
+  ma_scale ~ std_normal();
+
+  var_innovation_z ~ std_normal();
+  var_innovation_sd ~ std_normal();
+  epsilon_cor_L ~ lkj_corr_cholesky(1);
+
+  for(n in 1:N) {
+    y[n] ~ multi_normal_cholesky(mu_hat[n], diag_pre_multiply(exp(logsd_hat[n]), epsilon_cor_L));
+  }
+}
