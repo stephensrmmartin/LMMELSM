@@ -7,20 +7,20 @@ functions {
     return(n_k);
   }
 
-  int seq_from_to(int a, int b) {
+  int[] seq_from_to(int a, int b) {
     int n = b - a + 1;
     int out[n];
     for(i in 1:n) {
-      out[i] = i;
+      out[i] = i + a - 1;
     }
-    out += a - 1;
+    /* out = out + a - 1; */
     return(out);
   }
 }
 
 data {
   int N; // (Total) Observations
-  int K; // Groups
+  /* int K; // Groups */
   int F; // Outcome variables
   int P; // Location predictors
   int Q; // Scale predictors
@@ -33,10 +33,11 @@ data {
   int MA_P; // Lags for MA location component
   int AR_Q; // Lags for AR scale component (?)
   int MA_Q; // Lags for MA scale component (?)
+  int ahead;
 
-  int group[N];
-  matrix[N, P] x_loc;
-  matrix[N, Q] x_sca;
+  /* int group[N]; */
+  /* matrix[N, P] x_loc; */
+  /* matrix[N, Q] x_sca; */
   matrix[N, F] y;
 
   /* If sorted, this is not necessary. Otherwise, would need it, and need to create an index matrix. */
@@ -47,7 +48,9 @@ data {
 }
 
 transformed data {
-  int n_k[K] = compute_n_k(K, group); // Number of time points per group (ARMA).
+  /* int n_k[K] = compute_n_k(K, group); // Number of time points per group (ARMA). */
+  int ar_params[4] = {AR_P, MA_P, AR_Q, MA_Q};
+  int max_lag = max(ar_params);
 }
 
 parameters {
@@ -63,10 +66,10 @@ parameters {
   // And when cross-lags are allowed, then the SUM must be [0, 1], I think.
   // Unsure about constraint on the log-sd models though; those are multiplicative.
   /* matrix[F, F] ar_location[AR_P]; */
-  row_vector<lower=0, upper=1>[F] ar_location[AR_P];
-  row_vector<lower=0, upper=1>[F] ma_location[MA_P];
-  row_vector[F] ar_scale[AR_Q];
-  row_vector[F] ma_scale[MA_Q];
+  row_vector<lower=-1, upper=1>[F] ar_location[AR_P];
+  row_vector<lower=-1, upper=1>[F] ma_location[MA_P];
+  row_vector<lower=-1, upper=1>[F] ar_scale[AR_Q];
+  row_vector<lower=-1, upper=1>[F] ma_scale[MA_Q];
   matrix[N, F] var_innovation_z;
   row_vector<lower=0>[F] var_innovation_sd;
   /* cholesky_factor_corr[F] var_innovation_cor; */ // Test this later!
@@ -82,8 +85,8 @@ transformed parameters {
   matrix[N, F] var_innovation = diag_post_multiply(var_innovation_z, var_innovation_sd);
 
   // FE
-  matrix[N, F] mu_hat = rep_matrix(nu, N) + x_loc * mu_beta;
-  matrix[N, F] logsd_hat = rep_matrix(sigma, N) + x_sca * logsd_beta;
+  matrix[N, F] mu_hat = rep_matrix(nu, N); /* + x_loc * mu_beta; */
+  matrix[N, F] logsd_hat = rep_matrix(sigma, N); /* + x_sca * logsd_beta; */
   logsd_hat += var_innovation;
   // RE
 
@@ -118,15 +121,15 @@ transformed parameters {
 model {
   nu ~ std_normal();
   sigma ~ std_normal();
-  mu_beta ~ std_normal();
-  logsd_beta ~ std_normal();
+  to_vector(mu_beta) ~ std_normal();
+  to_vector(logsd_beta) ~ std_normal();
 
-  ar_location ~ std_normal();
-  ma_location ~ std_normal();
-  ar_scale ~ std_normal();
-  ma_scale ~ std_normal();
+  for(a in 1:AR_P) ar_location[a] ~ std_normal();
+  for(a in 1:MA_P) ma_location[a] ~ std_normal();
+  for(a in 1:AR_Q) ar_scale[a] ~ std_normal();
+  for(a in 1:MA_Q) ma_scale[a] ~ std_normal();
 
-  var_innovation_z ~ std_normal();
+  to_vector(var_innovation_z) ~ std_normal();
   var_innovation_sd ~ std_normal();
   epsilon_cor_L ~ lkj_corr_cholesky(1);
 
@@ -134,3 +137,40 @@ model {
     y[n] ~ multi_normal_cholesky(mu_hat[n], diag_pre_multiply(exp(logsd_hat[n]), epsilon_cor_L));
   }
 }
+
+generated quantities {
+  matrix[ahead, F] pred; // The predicted variate.
+  matrix[max_lag + ahead, F] y_comb = rep_matrix(0, max_lag + ahead, F); // Combined variates [y and pred]
+  matrix[max_lag + ahead, F] mu_hat_comb = rep_matrix(nu, max_lag + ahead); // Combined mu_hats
+  matrix[max_lag + ahead, F] logsd_hat_comb = rep_matrix(sigma, max_lag + ahead); // Combined logsd_hats
+  matrix[max_lag + ahead, F] var_innovation_comb = rep_matrix(0, max_lag + ahead, F);
+  y_comb[1:max_lag,] = y[(N - max_lag + 1):N,];
+  mu_hat_comb[1:max_lag,] = mu_hat[(N - max_lag + 1):N,];
+  logsd_hat_comb[1:max_lag,] = logsd_hat[(N - max_lag + 1):N,];
+  var_innovation_comb[1:max_lag,] = var_innovation[(N - max_lag + 1):N,];
+  /* var_innovation_comb[(max_lag + 1):(max_lag + ahead)] = to_matrix(normal_rng(0, rep_vector(var_innovation_sd, (ahead) * F)), ahead, F); // Fill new values with normal RNG */
+  // Get var_innovation_comb new values
+  for(a in (max_lag + 1):(max_lag + ahead)) {
+    // For each lag, accumulate (See trans. params).
+    // Be caeful handling indices; need to convert , e.g., var_innovation[96:100] to [1:4].
+    for(f in 1:F) {
+      var_innovation_comb[a,f] = normal_rng(0, var_innovation_sd[f]);
+    }
+    for(lag in 1:min(AR_P, a - 1)) {
+      mu_hat_comb[a] += y_comb[a-lag] .* ar_location[lag];
+    }
+    for(lag in 1:min(MA_P, a - 1)) {
+      mu_hat_comb[a] += (y_comb[a - lag] - mu_hat_comb[a - lag]) .* ma_location[lag];
+    }
+    for(lag in 1:min(AR_Q, a - 1)) {
+      logsd_hat_comb[a] += logsd_hat_comb[a - lag] .* ar_scale[lag];
+    }
+    for(lag in 1:min(MA_Q, a - 1)) {
+      logsd_hat_comb[a] += var_innovation[a - lag] .* ma_scale[lag];
+    }
+
+    // Generate values
+    pred[a - max_lag] = multi_normal_cholesky_rng(mu_hat_comb[a], diag_pre_multiply(exp(logsd_hat_comb[a]), epsilon_cor_L))';
+  }
+}
+
