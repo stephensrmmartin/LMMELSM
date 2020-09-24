@@ -139,11 +139,15 @@ model {
 }
 
 generated quantities {
+  matrix[N, F] backcast;
   matrix[ahead, F] pred; // The predicted variate.
   matrix[max_lag + ahead, F] y_comb = rep_matrix(0, max_lag + ahead, F); // Combined variates [y and pred]
   matrix[max_lag + ahead, F] mu_hat_comb = rep_matrix(nu, max_lag + ahead); // Combined mu_hats
   matrix[max_lag + ahead, F] logsd_hat_comb = rep_matrix(sigma, max_lag + ahead); // Combined logsd_hats
   matrix[max_lag + ahead, F] var_innovation_comb = rep_matrix(0, max_lag + ahead, F);
+  for(n in 1:N) {
+    backcast[n] = multi_normal_cholesky_rng(mu_hat[n], diag_pre_multiply(exp(logsd_hat[n]), epsilon_cor_L))';
+  }
   y_comb[1:max_lag,] = y[(N - max_lag + 1):N,];
   mu_hat_comb[1:max_lag,] = mu_hat[(N - max_lag + 1):N,];
   logsd_hat_comb[1:max_lag,] = logsd_hat[(N - max_lag + 1):N,];
@@ -155,6 +159,7 @@ generated quantities {
     // Be caeful handling indices; need to convert , e.g., var_innovation[96:100] to [1:4].
     for(f in 1:F) {
       var_innovation_comb[a,f] = normal_rng(0, var_innovation_sd[f]);
+      logsd_hat_comb[a,f] = var_innovation_comb[a,f];
     }
     for(lag in 1:min(AR_P, a - 1)) {
       mu_hat_comb[a] += y_comb[a-lag] .* ar_location[lag];
@@ -166,11 +171,11 @@ generated quantities {
       logsd_hat_comb[a] += logsd_hat_comb[a - lag] .* ar_scale[lag];
     }
     for(lag in 1:min(MA_Q, a - 1)) {
-      logsd_hat_comb[a] += var_innovation[a - lag] .* ma_scale[lag];
+      logsd_hat_comb[a] += var_innovation_comb[a - lag] .* ma_scale[lag];
     }
-
     // Generate values
     pred[a - max_lag] = multi_normal_cholesky_rng(mu_hat_comb[a], diag_pre_multiply(exp(logsd_hat_comb[a]), epsilon_cor_L))';
+    y_comb[a] = pred[a - max_lag];
   }
 }
 
