@@ -157,9 +157,10 @@ generated quantities {
   for(a in (max_lag + 1):(max_lag + ahead)) {
     // For each lag, accumulate (See trans. params).
     // Be caeful handling indices; need to convert , e.g., var_innovation[96:100] to [1:4].
+    // Disabling the innovations temporarily.
     for(f in 1:F) {
       var_innovation_comb[a,f] = normal_rng(0, var_innovation_sd[f]);
-      logsd_hat_comb[a,f] = var_innovation_comb[a,f];
+      logsd_hat_comb[a,f] += var_innovation_comb[a,f];
     }
     for(lag in 1:min(AR_P, a - 1)) {
       mu_hat_comb[a] += y_comb[a-lag] .* ar_location[lag];
@@ -172,6 +173,7 @@ generated quantities {
     }
     for(lag in 1:min(MA_Q, a - 1)) {
       logsd_hat_comb[a] += var_innovation_comb[a - lag] .* ma_scale[lag];
+      /* logsd_hat_comb[a] += (log(fabs(y_comb[a - lag] - mu_hat_comb[a - lag])) - logsd_hat_comb[a - lag]) .* ma_scale[lag]; */
     }
     // Generate values
     pred[a - max_lag] = multi_normal_cholesky_rng(mu_hat_comb[a], diag_pre_multiply(exp(logsd_hat_comb[a]), epsilon_cor_L))';
