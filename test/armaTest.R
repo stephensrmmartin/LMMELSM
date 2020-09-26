@@ -236,9 +236,9 @@ lines(summary(out, pars = paste0("backcast[",1:190,",",ts,"]"))$summary[,"mean"]
 lines(summary(out, pars = paste0("backcast[",1:190,",",ts,"]"))$summary[,"2.5%"],col="blue",lty='dashed')
 lines(summary(out, pars = paste0("backcast[",1:190,",",ts,"]"))$summary[,"97.5%"],col="blue",lty='dashed')
 # Predicted
-lines(296:300, summary(out, pars = paste0("pred[",1:10,",",ts,"]"))$summary[,"mean"],col="red")
-lines(296:300, summary(out, pars = paste0("pred[",1:10,",",ts,"]"))$summary[,"2.5%"],col="red", lty='dashed')
-lines(296:300, summary(out, pars = paste0("pred[",1:10,",",ts,"]"))$summary[,"97.5%"],col="red", lty='dashed')
+lines(191:200, summary(out, pars = paste0("pred[",1:10,",",ts,"]"))$summary[,"mean"],col="red")
+lines(191:200, summary(out, pars = paste0("pred[",1:10,",",ts,"]"))$summary[,"2.5%"],col="red", lty='dashed')
+lines(191:200, summary(out, pars = paste0("pred[",1:10,",",ts,"]"))$summary[,"97.5%"],col="red", lty='dashed')
 
 # Add bmgarch
 bmSamps <- fitted(bmOut, inc_samples = TRUE)$backcast$samples
@@ -259,18 +259,38 @@ lines(bmSamps_pred_sum[,1,ts], col = "purple")
 lines(bmSamps_pred_sum[,2,ts], col = "purple", lty = "dashed")
 lines(bmSamps_pred_sum[,3,ts], col = "purple", lty = "dashed")
 
-lines(296:300,forecast(bmOut, ahead = 10)$forecast$mean[,"mean",ts], col = "green")
-lines(296:300,forecast(bmOut, ahead = 10)$forecast$mean[,"2.5%",ts], col = "green", lty = "dashed")
-lines(296:300,forecast(bmOut, ahead = 10)$forecast$mean[,"97.5%",ts], col = "green", lty = "dashed")
+lines(191:200,forecast(bmOut, ahead = 10)$forecast$mean[,"mean",ts], col = "green")
+lines(191:200,forecast(bmOut, ahead = 10)$forecast$mean[,"2.5%",ts], col = "green", lty = "dashed")
+lines(191:200,forecast(bmOut, ahead = 10)$forecast$mean[,"97.5%",ts], col = "green", lty = "dashed")
 
 # Plot variances
 outVars <- as.matrix(out, pars = "logsd_hat") %>% apply(2, function(x){exp(x * 2)}) %>% colMeans %>% matrix(c(190, 3))
 bmVars <- fitted(bmOut)$backcast$var[,"mean",]
 
-par(mfrow=c(3,1))
+par(mfcol=c(3,2))
 plot(outVars[,1], type = 'l')
 lines(bmVars[,1], col = "purple")
 plot(outVars[,2], type = 'l')
 lines(bmVars[,2], col = "purple")
 plot(outVars[,3], type = 'l')
 lines(bmVars[,3], col = "purple")
+
+# Really interesting: The estimates are fairly decent (FOR THE AR part, not MA part, but BEKK didn't do great either.)
+# This is saved to ~/Output/mrgarch_bekk_sim_comparison.Rd
+# BEKK:
+##         [,1]     [,2]     [,3]
+## [1,] 0.59422 -0.56704 -0.00052
+## [2,] 0.40791  0.44285 -0.00330
+## [3,] 0.04388 -0.03151 -0.09393
+# MR MGARCH:
+## > t(matrix(summary(out, pars = "ar_scale")$summary[,"mean"], 3, 3))
+##           [,1]       [,2]       [,3]
+## [1,] 0.3246773  0.5306054  0.1198283
+## [2,] 0.3411035  0.2238356  0.1881635
+## [3,] 0.1231266 -0.2564755 -0.1943851
+# True:
+## > t(A)
+##            [,1]       [,2]        [,3]
+## [1,] 0.37338231 -0.4589366  0.16112160
+## [2,] 0.37837085  0.3905590  0.06628047
+## [3,] 0.09354734 -0.1354855 -0.14258715
