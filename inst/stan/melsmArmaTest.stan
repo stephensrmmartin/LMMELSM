@@ -66,10 +66,10 @@ parameters {
   // And when cross-lags are allowed, then the SUM must be [0, 1], I think.
   // Unsure about constraint on the log-sd models though; those are multiplicative.
   /* matrix[F, F] ar_location[AR_P]; */
-  row_vector<lower=-1, upper=1>[F] ar_location[AR_P];
-  row_vector<lower=-1, upper=1>[F] ma_location[MA_P];
-  row_vector<lower=-1, upper=1>[F] ar_scale[AR_Q];
-  row_vector<lower=-1, upper=1>[F] ma_scale[MA_Q];
+  matrix<lower=-1, upper=1>[F,F] ar_location[AR_P];
+  matrix<lower=-1, upper=1>[F,F] ma_location[MA_P];
+  matrix<lower=-1, upper=1>[F,F] ar_scale[AR_Q];
+  matrix<lower=-1, upper=1>[F,F] ma_scale[MA_Q];
   matrix[N, F] var_innovation_z;
   row_vector<lower=0>[F] var_innovation_sd;
   /* cholesky_factor_corr[F] var_innovation_cor; */ // Test this later!
@@ -98,22 +98,22 @@ transformed parameters {
   for(n in 2:N) {
     // AR
     for(lag in 1:min(AR_P, n - 1)) {
-      mu_hat[n] += y[n-lag] .* ar_location[lag];
+      mu_hat[n] += y[n-lag] * ar_location[lag];
     }
     // MA
     for(lag in 1:min(MA_P, n - 1)) {
-      mu_hat[n] += (y[n - lag] - mu_hat[n - lag]) .* ma_location[lag];
+      mu_hat[n] += (y[n - lag] - mu_hat[n - lag]) * ma_location[lag];
     }
   }
   // ARMA Scale
   for(n in 2:N) {
     // AR
     for(lag in 1:min(AR_Q, n - 1)) {
-      logsd_hat[n] += logsd_hat[n - lag] .* ar_scale[lag];
+      logsd_hat[n] += logsd_hat[n - lag] * ar_scale[lag];
     }
     // MA
     for(lag in 1:min(MA_Q, n - 1)) {
-      logsd_hat[n] += var_innovation[n - lag] .* ma_scale[lag];
+      logsd_hat[n] += var_innovation[n - lag] * ma_scale[lag];
     }
   }
 }
@@ -124,10 +124,10 @@ model {
   to_vector(mu_beta) ~ std_normal();
   to_vector(logsd_beta) ~ std_normal();
 
-  for(a in 1:AR_P) ar_location[a] ~ std_normal();
-  for(a in 1:MA_P) ma_location[a] ~ std_normal();
-  for(a in 1:AR_Q) ar_scale[a] ~ std_normal();
-  for(a in 1:MA_Q) ma_scale[a] ~ std_normal();
+  for(a in 1:AR_P) to_vector(ar_location[a]) ~ std_normal();
+  for(a in 1:MA_P) to_vector(ma_location[a]) ~ std_normal();
+  for(a in 1:AR_Q) to_vector(ar_scale[a]) ~ std_normal();
+  for(a in 1:MA_Q) to_vector(ma_scale[a]) ~ std_normal();
 
   to_vector(var_innovation_z) ~ std_normal();
   var_innovation_sd ~ std_normal();
@@ -163,16 +163,16 @@ generated quantities {
       logsd_hat_comb[a,f] += var_innovation_comb[a,f];
     }
     for(lag in 1:min(AR_P, a - 1)) {
-      mu_hat_comb[a] += y_comb[a-lag] .* ar_location[lag];
+      mu_hat_comb[a] += y_comb[a-lag] * ar_location[lag];
     }
     for(lag in 1:min(MA_P, a - 1)) {
-      mu_hat_comb[a] += (y_comb[a - lag] - mu_hat_comb[a - lag]) .* ma_location[lag];
+      mu_hat_comb[a] += (y_comb[a - lag] - mu_hat_comb[a - lag]) * ma_location[lag];
     }
     for(lag in 1:min(AR_Q, a - 1)) {
-      logsd_hat_comb[a] += logsd_hat_comb[a - lag] .* ar_scale[lag];
+      logsd_hat_comb[a] += logsd_hat_comb[a - lag] * ar_scale[lag];
     }
     for(lag in 1:min(MA_Q, a - 1)) {
-      logsd_hat_comb[a] += var_innovation_comb[a - lag] .* ma_scale[lag];
+      logsd_hat_comb[a] += var_innovation_comb[a - lag] * ma_scale[lag];
       /* logsd_hat_comb[a] += (log(fabs(y_comb[a - lag] - mu_hat_comb[a - lag])) - logsd_hat_comb[a - lag]) .* ma_scale[lag]; */
     }
     // Generate values
