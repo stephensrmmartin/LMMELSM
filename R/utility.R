@@ -54,3 +54,33 @@ nlist <- function(...) {
 
     return(out)
 }
+
+.prob_to_interval <- function(p) {
+    low <- (1 - p) / 2
+    high <- 1 - low
+    return(c(low, high))
+}
+
+.extract_transform <- function(s, par = NULL) {
+    if(!is.matrix(s) & class(s) == "stanfit") {
+        s <- as.matrix(s, pars = par)
+    }
+    cns <- colnames(s)
+    S <- nrow(s)
+
+    ## rexInner <- r"(.*\[(\d+(?:,\d+)*)\])" # R < 4.0 breaks
+    rexInner <-  ".*\\[(\\d+(?:,\\d+)*)\\]"
+    inner <- gsub(rexInner, "\\1", cns)
+
+    inds <- apply(do.call(rbind, strsplit(inner, ",")), 2, as.numeric)
+    inds_max <- apply(inds, 2, max)
+    inds_all <- c(inds_max, S)
+
+    arr <- array(t(s), dim = inds_all)
+    return(arr)
+}
+
+.ones <- function(x) {
+    out <- matrix(1, x, 1)
+    return(out)
+}
