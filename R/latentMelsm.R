@@ -276,11 +276,11 @@ lmmelsm <- function(formula, group, data, ...) {
 
 .parse_formula.observed <- function(mlist, mf) {
     mlist_RHS <- .combine_RHS(mlist)
-    mm <- model.matrix(mlist_RHS, mf)[, -1]
+    mm <- model.matrix(mlist_RHS, mf)[, -1, drop = FALSE]
 
     J <- ncol(mm)
     `F` <- J
-    J_f <- rep(1, `F`)
+    J_f <- as.array(rep(1, `F`))
     F_ind <- matrix(0, `F`, J)
     F_ind[,1] <- seq_len(J)
 
