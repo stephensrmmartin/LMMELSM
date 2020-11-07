@@ -550,7 +550,11 @@ print.summary.lmmelsm <- function(x, ...) {
 ##' @author Stephen R. Martin
 ##' @keywords internal
 .summarize <- function(lmmelsm, pars, prob = .95) {
-    samps <- as.matrix(lmmelsm$fit, pars = pars)
+    if(class(lmmelsm) == "lmmelsm") {
+        samps <- as.matrix(lmmelsm$fit, pars = pars)
+    } else if (is.matrix(lmmelsm)) {
+        samps <- lmmelsm
+    }
     probs <- .prob_to_interval(prob)
     fun <- function(col) {
         m <- mean(col)
