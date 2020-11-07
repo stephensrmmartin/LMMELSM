@@ -104,10 +104,10 @@ coef.lmmelsm <- function(object, prob = .95, summarize = TRUE) {
     mu_beta_coef <- array(mu_beta_coef, c(S, P_random*F*GS$K))
     logsd_beta_coef <- array(logsd_beta_coef, c(S, Q_random*F*GS$K))
 
-    col_renames_mu <- expand.grid(P_random_inds, F, GS$K)
-    col_renames_logsd <- expand.grid(Q_random_inds, F, GS$K)
-    colnames(mu_beta_coef) <- paste0("mu_beta[", col_renames[,3], ",", col_renames[,1], ",", col_renames[,2], "]")
-    colnames(logsd_beta_coef) <- paste0("logsd_beta[", col_renames[,3], ",", col_renames[,1], ",", col_renames[,2], "]")
+    col_renames_mu <- expand.grid(P_random_ind, 1:F, 1:GS$K)
+    col_renames_logsd <- expand.grid(Q_random_ind, 1:F, 1:GS$K)
+    colnames(mu_beta_coef) <- paste0("mu_beta[", col_renames_mu[,3], ",", col_renames_mu[,1], ",", col_renames_mu[,2], "]")
+    colnames(logsd_beta_coef) <- paste0("logsd_beta[", col_renames_logsd[,3], ",", col_renames_logsd[,1], ",", col_renames_logsd[,2], "]")
 
     ### Summarize if needed.
     if(summarize) {
@@ -119,8 +119,8 @@ coef.lmmelsm <- function(object, prob = .95, summarize = TRUE) {
         # Tidy up
         mu_coef <- .tidy_summary(mu_coef, c(GS$name, "Factor"), GS$map$label, fnames)
         logsd_coef <- .tidy_summary(logsd_coef, c(GS$name, "Factor"), GS$map$label, fnames)
-        mu_beta_coef <- .tidy_summary(mu_beta_coef, c(GS$name, "Predictor", "Factor"), GS$map$label, pnames[P_random_ind], fnames)
-        logsd_beta_coef <- .tidy_summary(logsd_beta_coef, c(GS$name, "Predictor", "Factor"), GS$map$label, pnames[Q_random_ind], fnames)
+        mu_beta_coef <- .tidy_summary(mu_beta_coef, c(GS$name, "Predictor", "Factor"), GS$map$label, pnames$location, fnames)
+        logsd_beta_coef <- .tidy_summary(logsd_beta_coef, c(GS$name, "Predictor", "Factor"), GS$map$label, pnames$scale, fnames)
         # Package up [Remember to rearrange later]
         out <- list(location = mu_coef,
                     scale = logsd_coef,
