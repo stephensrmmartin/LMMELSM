@@ -111,7 +111,23 @@ coef.lmmelsm <- function(object, prob = .95, summarize = TRUE) {
 
     ### Summarize if needed.
     if(summarize) {
-        
+        # Summarize
+        mu_coef <- .summarize(mu_coef, NULL, prob = prob)
+        logsd_coef <- .summarize(logsd_coef, NULL, prob = prob)
+        mu_beta_coef <- .summarize(mu_beta_coef, NULL, prob = prob)
+        logsd_beta_coef <- .summarize(logsd_beta_coef, NULL, prob = prob)
+        # Tidy up
+        mu_coef <- .tidy_summary(mu_coef, c(GS$name, "Factor"), GS$map$label, fnames)
+        logsd_coef <- .tidy_summary(logsd_coef, c(GS$name, "Factor"), GS$map$label, fnames)
+        mu_beta_coef <- .tidy_summary(mu_beta_coef, c(GS$name, "Predictor", "Factor"), GS$map$label, pnames[P_random_ind], fnames)
+        logsd_beta_coef <- .tidy_summary(logsd_beta_coef, c(GS$name, "Predictor", "Factor"), GS$map$label, pnames[Q_random_ind], fnames)
+        # Package up [Remember to rearrange later]
+        out <- list(location = mu_coef,
+                    scale = logsd_coef,
+                    location_slope = mu_beta_coef,
+                    scale_slope = logsd_beta_coef
+                    )
+        return(out)
     } else {
         out <- list(location = mu_coef,
                     scale = logsd_coef,
