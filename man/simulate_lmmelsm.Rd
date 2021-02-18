@@ -49,7 +49,7 @@ simulate_lmmelsm(
 
 \item{epsilon_cor}{Matrix (Symmetric, SPD; F). Stochastic error term correlation between factors.}
 
-\item{zeta}{Matrix (Rx\link[=F*2 + P_random*F + Q_random*F]{F\emph{2 + P_random}F + Q_random*F}). Coefficient matrix for predicting RE SDs.}
+\item{zeta}{Matrix (\code{Rx[F*2 + P_random*F + Q_random*F]}). Coefficient matrix for predicting RE SDs.}
 
 \item{X_loc}{Matrix (Optional; NxP). Location design matrix.}
 

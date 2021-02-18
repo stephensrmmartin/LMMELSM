@@ -9,17 +9,17 @@
 \arguments{
 \item{x}{Integer. Dimension of matrix.}
 
-\item{string}{Logical (Default: FALSE). Whether to return strings (e.g., "\link{2,1}", or row indices, assuming column-major ordering.)}
+\item{string}{Logical (Default: FALSE). Whether to return strings (e.g., \code{[2,1]}, or row indices, assuming column-major ordering.)}
 }
 \value{
-
+Charactor vector (if \code{string} is TRUE) or integer vector.
 }
 \description{
 Helper for correlation-matrix summarize output.
 }
 \details{
 The .summarize function returns every redundant and constant element from a correlation matrix.
-This function returns the stan-strings (when \code{string = TRUE}, e.g., "\link{2,1}", "\link{3,1}"), or the row-index assuming column-major order.
+This function returns the stan-strings (when \code{string = TRUE}, e.g., \code{[2,1]}, \code{[3,1]}), or the row-index assuming column-major order.
 }
 \author{
 Stephen R. Martin

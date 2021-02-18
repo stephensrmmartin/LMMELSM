@@ -31,7 +31,7 @@
 ##' @param mu_logsd_betas_cor Matrix (Symmetric, SPD; F*2 + P_random*F + Q_random*F). Correlation matrix of random effects (slopes and intercepts, for location and scale models).
 ##' @param mu_logsd_betas_sigma Numeric vector (Positive; F*2 + P_random*F + Q_random*F). RE SDs (intercepts on exponentiated scale, if zeta is specified).
 ##' @param epsilon_cor Matrix (Symmetric, SPD; F). Stochastic error term correlation between factors.
-##' @param zeta Matrix (Rx[F*2 + P_random*F + Q_random*F]). Coefficient matrix for predicting RE SDs.
+##' @param zeta Matrix (`Rx[F*2 + P_random*F + Q_random*F]`). Coefficient matrix for predicting RE SDs.
 ##' @param X_loc Matrix (Optional; NxP). Location design matrix.
 ##' @param X_sca Matrix (Optional; NxQ). Scale design matrix.
 ##' @param X_bet Matrix (Optional; NxR). Between-SD design matrix.

@@ -11,7 +11,7 @@
 
 \item{pars}{Char vector. Which stan param to summarize.}
 
-\item{prob}{Numeric (Default: .95; \link{0 - 1}). The desired mass to contain within the CrI.}
+\item{prob}{Numeric (Default: .95; \verb{[0 - 1]}). The desired mass to contain within the CrI.}
 }
 \value{
 Matrix.

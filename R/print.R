@@ -545,12 +545,16 @@ print.summary.lmmelsm <- function(x, ...) {
 ##' @title Compute posterior summaries.
 ##' @param lmmelsm lmmelsm object.
 ##' @param pars Char vector. Which stan param to summarize.
-##' @param prob Numeric (Default: .95; [0 - 1]). The desired mass to contain within the CrI.
+##' @param prob Numeric (Default: .95; `[0 - 1]`). The desired mass to contain within the CrI.
 ##' @return Matrix.
 ##' @author Stephen R. Martin
 ##' @keywords internal
 .summarize <- function(lmmelsm, pars, prob = .95) {
-    samps <- as.matrix(lmmelsm$fit, pars = pars)
+    if(inherits(lmmelsm, "lmmelsm")) {
+        samps <- as.matrix(lmmelsm$fit, pars = pars)
+    } else if (is.matrix(lmmelsm)) {
+        samps <- lmmelsm
+    }
     probs <- .prob_to_interval(prob)
     fun <- function(col) {
         m <- mean(col)
@@ -568,7 +572,7 @@ print.summary.lmmelsm <- function(x, ...) {
     return(samps.sum)
 }
 ##' @title Convert stan par-string to numeric columns.
-##' @param x String. E.g., "lambda[1,2]"
+##' @param x String. E.g., `"lambda[1,2]"`
 ##' @param labs Character vector (Optional). If supplied, provides the colnames for the matrix.
 ##' @return Numeric matrix.
 ##' @author Stephen R. Martin
@@ -591,7 +595,7 @@ print.summary.lmmelsm <- function(x, ...) {
 
 ##' Creates "tidy" summaries in lieu of the stan rownames.
 ##'
-##' .summarize creates an rstan-like summary with rownames, mat[1:R, 1:C].
+##' .summarize creates an rstan-like summary with rownames, \code{mat[1:R, 1:C]}.
 ##' \code{.tidy_summary(mat, c("rows", "cols"))} would then create two new columns, "rows" and "cols" with the indices in them.
 ##' If arguments are provided in \code{...}, then these indicate the mappings between the indices and labeled values.
 ##' E.g., \code{.tidy_summary(mat, c("rows", "cols"), c("A", "B"), c("C", "D"))} would create two new columns, "rows" and "cols", and replace rows = 1 with rows = A; cols=2 with cols = D, and so on.
@@ -599,7 +603,7 @@ print.summary.lmmelsm <- function(x, ...) {
 ##' @title Takes stan summary, returns summary with indices-as-columns.
 ##' @param x Output of .summarize
 ##' @param labs The labels for each parameter index. E.g., "predictor", "factor"
-##' @param ... Optional (but recommended). Mappings for indices. E.g., Index column 1 is replaced by ...[[1]][col1Indices].
+##' @param ... Optional (but recommended). Mappings for indices. E.g., Index column 1 is replaced by ...`[[1]][col1Indices]`.
 ##' @return Data frame.
 ##' @author Stephen R. Martin
 ##' @keywords internal
@@ -649,11 +653,11 @@ print.summary.lmmelsm <- function(x, ...) {
 ##' Helper for correlation-matrix summarize output.
 ##'
 ##' The .summarize function returns every redundant and constant element from a correlation matrix.
-##' This function returns the stan-strings (when \code{string = TRUE}, e.g., "[2,1]", "[3,1]"), or the row-index assuming column-major order.
+##' This function returns the stan-strings (when \code{string = TRUE}, e.g., \code{[2,1]}, \code{[3,1]}), or the row-index assuming column-major order.
 ##' @title Get indices for subsetting lower-tri summaries of square matrices. 
 ##' @param x Integer. Dimension of matrix.
-##' @param string Logical (Default: FALSE). Whether to return strings (e.g., "[2,1]", or row indices, assuming column-major ordering.)
-##' @return 
+##' @param string Logical (Default: FALSE). Whether to return strings (e.g., \code{[2,1]}, or row indices, assuming column-major ordering.)
+##' @return Charactor vector (if \code{string} is TRUE) or integer vector.
 ##' @author Stephen R. Martin
 ##' @keywords internal
 .full_to_lower_tri <- function(x, string = FALSE) {

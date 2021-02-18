@@ -11,7 +11,7 @@
 
 \item{labs}{The labels for each parameter index. E.g., "predictor", "factor"}
 
-\item{...}{Optional (but recommended). Mappings for indices. E.g., Index column 1 is replaced by ...[\link{1}][col1Indices].}
+\item{...}{Optional (but recommended). Mappings for indices. E.g., Index column 1 is replaced by ...\verb{[[1]][col1Indices]}.}
 }
 \value{
 Data frame.
@@ -20,7 +20,7 @@ Data frame.
 Creates "tidy" summaries in lieu of the stan rownames.
 }
 \details{
-.summarize creates an rstan-like summary with rownames, mat\link{1:R, 1:C}.
+.summarize creates an rstan-like summary with rownames, \code{mat[1:R, 1:C]}.
 \code{.tidy_summary(mat, c("rows", "cols"))} would then create two new columns, "rows" and "cols" with the indices in them.
 If arguments are provided in \code{...}, then these indicate the mappings between the indices and labeled values.
 E.g., \code{.tidy_summary(mat, c("rows", "cols"), c("A", "B"), c("C", "D"))} would create two new columns, "rows" and "cols", and replace rows = 1 with rows = A; cols=2 with cols = D, and so on.
