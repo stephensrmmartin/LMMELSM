@@ -88,7 +88,7 @@ lmmelsm <- function(formula, group, data, ...) {
     stan_args$cores <- dots$cores %IfNull% detectCores()
     stan_args$chains <- dots$chains %IfNull% 4
     stan_args$iter <- dots$iter %IfNull% 2000
-    stan_args$prior_only <- dots$prior_only %IfNull% FALSE
+    ## stan_args$prior_only <- dots$prior_only %IfNull% FALSE
     stan_args$init <- dots$init %IfNull% 0
     ## Remove from dots the things that are specified here
     dots[names(dots) %in% names(stan_args)] <- NULL
@@ -100,8 +100,8 @@ lmmelsm <- function(formula, group, data, ...) {
         stan_args$object <- stanmodels$lmmelsmPredObs2
     }
     stan_args$data <- d$stan_data
-    stan_args$data$prior_only <- stan_args$prior_only
-    stan_args$prior_only <- NULL
+    stan_args$data$prior_only <- dots$prior_only %IfNull% FALSE
+    dots$prior_only <- NULL
 
     pars <- c("nu",
               "lambda",
