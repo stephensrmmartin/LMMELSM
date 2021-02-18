@@ -78,8 +78,8 @@
 ##' @author Stephen R. Martin
 ##' @rawNamespace import(rstan, except = loo)
 ##' @importFrom parallel detectCores
-##' @import stats
-##' @import utils
+##' @importFrom stats complete.cases dnorm formula model.frame model.matrix na.pass quantile rnorm
+##' @importFrom utils head strcapture
 ##' @export
 lmmelsm <- function(formula, group, data, ...) {
     # Set defaults
