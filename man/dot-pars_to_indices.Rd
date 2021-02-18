@@ -7,7 +7,7 @@
 .pars_to_indices(x, labs = NULL)
 }
 \arguments{
-\item{x}{String. E.g., "lambda\link{1,2}"}
+\item{x}{String. E.g., \code{"lambda[1,2]"}}
 
 \item{labs}{Character vector (Optional). If supplied, provides the colnames for the matrix.}
 }

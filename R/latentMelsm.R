@@ -401,8 +401,6 @@ lmmelsm <- function(formula, group, data, ...) {
         }
         return(out)
     }
-
-    return(rhs_name)
 }
 
 ##' @title Combines multiple formulas' RHS into one.

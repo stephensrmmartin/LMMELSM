@@ -572,7 +572,7 @@ print.summary.lmmelsm <- function(x, ...) {
     return(samps.sum)
 }
 ##' @title Convert stan par-string to numeric columns.
-##' @param x String. E.g., "lambda[1,2]"
+##' @param x String. E.g., `"lambda[1,2]"`
 ##' @param labs Character vector (Optional). If supplied, provides the colnames for the matrix.
 ##' @return Numeric matrix.
 ##' @author Stephen R. Martin
@@ -603,7 +603,7 @@ print.summary.lmmelsm <- function(x, ...) {
 ##' @title Takes stan summary, returns summary with indices-as-columns.
 ##' @param x Output of .summarize
 ##' @param labs The labels for each parameter index. E.g., "predictor", "factor"
-##' @param ... Optional (but recommended). Mappings for indices. E.g., Index column 1 is replaced by ...[[1]][col1Indices].
+##' @param ... Optional (but recommended). Mappings for indices. E.g., Index column 1 is replaced by ...`[[1]][col1Indices]`.
 ##' @return Data frame.
 ##' @author Stephen R. Martin
 ##' @keywords internal

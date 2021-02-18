@@ -11,7 +11,7 @@
 
 \item{labs}{The labels for each parameter index. E.g., "predictor", "factor"}
 
-\item{...}{Optional (but recommended). Mappings for indices. E.g., Index column 1 is replaced by ...[\link{1}][col1Indices].}
+\item{...}{Optional (but recommended). Mappings for indices. E.g., Index column 1 is replaced by ...\verb{[[1]][col1Indices]}.}
 }
 \value{
 Data frame.
