@@ -7,6 +7,7 @@
 ##' @author Stephen R. Martin
 ##' @importFrom loo loo
 ##' @export loo
+##' @aliases loo
 ##' @export
 loo.lmmelsm <- function(x, type = c("observation", "group"), ...) {
     type <- match.arg(type)

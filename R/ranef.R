@@ -2,17 +2,19 @@
 ##'
 ##' Extracts the random effects from the lmmelsm object.
 ##' Note that this is different from the random \emph{coefficients}.
-##' E.g., if $$\beta_{0i} = \beta_0 + u_{0i} $$, then \code{coef} extracts $\beta_{0i}$ and \code{ranef} extracts $u_{0i}$.
+##' E.g., if \eqn{\beta_{0i} = \beta_0 + u_{0i}}, then \code{coef} extracts \eqn{\beta_{0i}} and \code{ranef} extracts \eqn{u_{0i}}.
 ##' @title Extract random effects from lmmelsm objects.
 ##' @return List of ranef summaries, or samples (if summarize = FALSE).
 ##' @author Stephen R. Martin
 ##' @importFrom nlme ranef
 ##' @export ranef
+##' @aliases ranef
 ##' @param object lmmelsm object.
 ##' @param prob Numeric (Default: .95). Amount of probability mass contained in the credible interval.
 ##' @param summarize Logical (Default: TRUE). Whether to return posterior summaries (TRUE) or MCMC samples (FALSE).
+##' @param ... Not used.
 ##' @export
-ranef.lmmelsm <- function(object, prob = .95, summarize = TRUE) {
+ranef.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
     x <- object
 
     IS <- x$meta$indicator_spec
@@ -57,14 +59,14 @@ ranef.lmmelsm <- function(object, prob = .95, summarize = TRUE) {
 ##' @param object lmmelsm object.
 ##' @param prob Numeric (Default: .95). Amount of probability mass contained in the credible interval.
 ##' @param summarize Logical (Default: TRUE). Whether to return posterior summaries (TRUE) or MCMC samples (FALSE).
+##' @param ... Not used.
 ##' @return List of summaries (if \code{summarize} is TRUE), or list of MCMC samples.
 ##' @author Stephen R Martin
 ##' @export
-##' @importFrom nlme coef
-##' @export coef
+##' @importFrom stats coef
 ##' @aliases coef
 ##' @method coef lmmelsm
-coef.lmmelsm <- function(object, prob = .95, summarize = TRUE) {
+coef.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
     x <- object
 
     IS <- x$meta$indicator_spec

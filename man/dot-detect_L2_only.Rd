@@ -19,7 +19,7 @@ Detects whether the predictors are level-2 only.
 E.g., whether location and scale are covariates are the same across all n_k observations of each K.
 This is important for efficiency reasons.
 If the covariates are invariant across repeated observations of the given group k, for all K, then we can compute predicted values once, and broadcast the prediction, rather than compute the prediction for every single row.
-Specifically, it detects if all x == x\link{1}, where x is a group's data, for each column in mf.
+Specifically, it detects if all \code{x == x[1]}, where x is a group's data, for each column in mf.
 }
 \author{
 Stephen R. Martin

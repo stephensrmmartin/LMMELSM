@@ -8,7 +8,7 @@ Authors@R:
            email = "stephenSRMMartin@gmail.com",
            comment = c(ORCID = "0000-0001-8085-2390"))
 Description: Fits Latent Multivariate Mixed EFfects Location Scale Models. It is Multivariate, because multiple outcomes' locations and scales can be modeled simultaneously. It is Latent, because the outcomes are latent variables, manifest by specified indicators.
-License: GPL-3
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
@@ -21,7 +21,11 @@ Imports:
     Rcpp (>= 0.12.0),
     rstan (>= 2.18.1),
     rstantools (>= 2.0.0),
-    parallel (>= 3.6.0)
+    parallel (>= 3.6.0),
+    nlme (>= 3.0),
+    Formula (>= 1.2),
+    MASS (>= 7.0),
+    loo (>= 2.3.0)
 LinkingTo: 
     BH (>= 1.66.0),
     Rcpp (>= 0.12.0),
