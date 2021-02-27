@@ -102,7 +102,7 @@ coef.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
     S <- nrow(mu_coef) # samples
 
     mu_beta_coef <- logsd_beta_coef <- NA
-    if(P_random > 0) {
+    if(P_random > 0) { # Random location coefficients
         mu_fixed_inds <- as.matrix(expand.grid(P_random_ind, 1:F))
         mu_fixed_inds <- paste0("[",mu_fixed_inds[,1],",",mu_fixed_inds[,2],"]")
 
@@ -132,7 +132,7 @@ coef.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
         colnames(mu_beta_coef) <- paste0("mu_beta[", col_renames_mu[,1], ",", col_renames_mu[,2], ",", col_renames_mu[,3], "]")
     }
 
-    if(Q_random > 0) {
+    if(Q_random > 0) { # Random scale coefficients
         logsd_fixed_inds <- as.matrix(expand.grid(Q_random_ind, 1:F))
         logsd_fixed_inds <- paste0("[",logsd_fixed_inds[,1],",",logsd_fixed_inds[,2],"]")
 
@@ -180,7 +180,7 @@ coef.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
             logsd_beta_coef <- .tidy_summary(logsd_beta_coef, c(GS$name, "predictor", "factor"), GS$map$label, pnames$scale, fnames)
         }
 
-        # Package up [Remember to rearrange later]
+        # Package up
         out <- list(mu_intercept = mu_coef,
                     logsd_intercept = logsd_coef,
                     mu_coef = mu_beta_coef,

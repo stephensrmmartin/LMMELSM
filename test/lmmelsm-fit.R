@@ -1,3 +1,26 @@
+######################
+# Univariate, no REs #
+######################
+
+set.seed(13)
+d <- LMMELSM:::simulate_lmmelsm(
+                   n = 50, K = 10,
+                   lambda = c(.7,.7,.7,.8,.9),
+                   resid = rep(1, 5),
+                   nu = rep(0, 5),
+                   mu_logsd_betas_cor = diag(1,2,2),
+                   mu_logsd_betas_sigma = rep(.3, 2),
+                   epsilon_cor = 1
+               )
+
+fit <- lmmelsm(list(
+    my_fact ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5
+), subject, data = d$df, iter = 200)
+
+summary(fit)
+ranef(fit)
+coef(fit)
+
 ##############################
 # Univariate, Random effects #
 ##############################
