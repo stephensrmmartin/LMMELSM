@@ -35,8 +35,52 @@ test_that("lmmelsm returns correct structures.", {
                         fac2 ~ obs_5 + obs_6 + obs_7 + obs_8,
                         location ~ loc_1 + loc_2 | loc_1,
                         scale ~ sca_1 + sca_2 | sca_2),
-                group = subject, data = d$df, iter = 10)
+                group = subject, data = d$df, iter = 10, chains = 1, cores = 1)
 
     expect_s3_class(fit, "lmmelsm")
-    expect_named(fit, c("meta", "data", "fit"))
+    expect_named(fit, c("fit", "meta", "data","stan_data", "stan_args"))
+
+    expect_equal(fit$meta$group_spec$K, K)
+    expect_equal(fit$meta$indicator_spec$J, J)
+    expect_equal(fit$meta$indicator_spec$N, n*K)
+
+    fit_sum <- summary(fit)
+    expect_s3_class(fit_sum, "summary.lmmelsm")
+    expect_named(fit_sum, c("meta", "summary"))
+    expect_named(fit_sum$summary,
+		c("lambda",
+		"nu",
+		"sigma",
+                "mu_coef",
+                "logsd_coef",
+                "zeta",
+		"random_mu_intercept",
+		"random_logsd_intercept",
+		"random_mu_coef",
+		"random_logsd_coef",
+		"random_sigma",
+		"random_correlation",
+		"factor_correlation"),
+		ignore.order = TRUE)
+
+    fit_ranef <- ranef(fit)
+    expect_type(fit_ranef, "list")
+    expect_named(fit_ranef, c("random_mu_intercept",
+                              "random_logsd_intercept",
+                              "random_mu_coef",
+                              "random_logsd_coef"), ignore.order = TRUE)
+    expect_equal(nrow(fit_ranef$random_mu_intercept), K*F)
+    expect_equal(nrow(fit_ranef$random_logsd_intercept), K*F)
+
+    fit_coef <- coef(fit)
+    expect_named(fit_coef, c("mu_intercept",
+                             "logsd_intercept",
+                             "mu_coef",
+                             "logsd_coef"))
+    expect_equal(nrow(fit_coef$mu_intercept), K*F)
+    expect_equal(nrow(fit_coef$logsd_intercept), K*F)
+    for(i in seq_len(K)) {
+        expect_equal(fit_ranef$random_mu_intercept[i,"Mean"], fit_coef$mu_intercept[i,"Mean"])
+        expect_equal(fit_ranef$random_logsd_intercept[i,"Mean"], fit_coef$logsd_intercept[i,"Mean"])
+    }
 })
