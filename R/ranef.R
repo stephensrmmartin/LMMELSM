@@ -32,8 +32,10 @@ ranef.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
     re_total <- 2 * F + F * P_random + F * Q_random
 
     if(summarize) {
-        out <- summary(x, prob = prob)$summary[c("mu_random","logsd_random","mu_beta_random","logsd_beta_random")]
-        names(out) <- c("location","scale","location_slope","scale_slope")
+        out <- summary(x, prob = prob)$summary[c("random_mu_intercept",
+                                                 "random_logsd_intercept",
+                                                 "random_mu_coef",
+                                                 "random_logsd_coef")]
         return(out)
     }
 
@@ -42,10 +44,10 @@ ranef.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
     mu_beta_random <- as.matrix(x$fit, pars = "mu_beta_random")
     logsd_beta_random <- as.matrix(x$fit, pars = "logsd_beta_random")
 
-    out <- list(location = mu_random,
-                scale = logsd_random,
-                location_slope = mu_beta_random,
-                scale_slope = logsd_beta_random
+    out <- list(random_mu_intercept = mu_random,
+                random_logsd_intercept = logsd_random,
+                random_mu_coef = mu_beta_random,
+                random_logsd_coef = logsd_beta_random
                 )
 
     return(out)
@@ -117,14 +119,19 @@ coef.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
     mu_beta_coef <- mu_beta_coef + array(mu_beta, c(S, P_random, F, GS$K))
     logsd_beta_coef <- logsd_beta_coef + array(logsd_beta, c(S, Q_random, F, GS$K))
 
+    ### Repermute to be more like ranef order (Column major)
+    mu_beta_coef <- aperm(mu_beta_coef, c(1, 4, 2, 3))
+    logsd_beta_coef <- aperm(logsd_beta_coef, c(1, 4, 2, 3))
+
     ### Wind it back down to be [S, Coefs] to pass to .summarize, or to return.
     mu_beta_coef <- array(mu_beta_coef, c(S, P_random*F*GS$K))
     logsd_beta_coef <- array(logsd_beta_coef, c(S, Q_random*F*GS$K))
 
-    col_renames_mu <- expand.grid(P_random_ind, 1:F, 1:GS$K)
-    col_renames_logsd <- expand.grid(Q_random_ind, 1:F, 1:GS$K)
-    colnames(mu_beta_coef) <- paste0("mu_beta[", col_renames_mu[,3], ",", col_renames_mu[,1], ",", col_renames_mu[,2], "]")
-    colnames(logsd_beta_coef) <- paste0("logsd_beta[", col_renames_logsd[,3], ",", col_renames_logsd[,1], ",", col_renames_logsd[,2], "]")
+    ## Regenerate matrix labels
+    col_renames_mu <- expand.grid(1:GS$K, P_random_ind, 1:F)
+    col_renames_logsd <- expand.grid(1:GS$K, Q_random_ind, 1:F)
+    colnames(mu_beta_coef) <- paste0("mu_beta[", col_renames_mu[,1], ",", col_renames_mu[,2], ",", col_renames_mu[,3], "]")
+    colnames(logsd_beta_coef) <- paste0("logsd_beta[", col_renames_logsd[,1], ",", col_renames_logsd[,2], ",", col_renames_logsd[,3], "]")
 
     ### Summarize if needed.
     if(summarize) {
@@ -133,23 +140,25 @@ coef.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
         logsd_coef <- .summarize(logsd_coef, NULL, prob = prob)
         mu_beta_coef <- .summarize(mu_beta_coef, NULL, prob = prob)
         logsd_beta_coef <- .summarize(logsd_beta_coef, NULL, prob = prob)
+
         # Tidy up
-        mu_coef <- .tidy_summary(mu_coef, c(GS$name, "Factor"), GS$map$label, fnames)
-        logsd_coef <- .tidy_summary(logsd_coef, c(GS$name, "Factor"), GS$map$label, fnames)
-        mu_beta_coef <- .tidy_summary(mu_beta_coef, c(GS$name, "Predictor", "Factor"), GS$map$label, pnames$location, fnames)
-        logsd_beta_coef <- .tidy_summary(logsd_beta_coef, c(GS$name, "Predictor", "Factor"), GS$map$label, pnames$scale, fnames)
+        mu_coef <- .tidy_summary(mu_coef, c(GS$name, "factor"), GS$map$label, fnames)
+        logsd_coef <- .tidy_summary(logsd_coef, c(GS$name, "factor"), GS$map$label, fnames)
+        mu_beta_coef <- .tidy_summary(mu_beta_coef, c(GS$name, "predictor", "factor"), GS$map$label, pnames$location, fnames)
+        logsd_beta_coef <- .tidy_summary(logsd_beta_coef, c(GS$name, "predictor", "factor"), GS$map$label, pnames$scale, fnames)
+
         # Package up [Remember to rearrange later]
-        out <- list(location = mu_coef,
-                    scale = logsd_coef,
-                    location_slope = mu_beta_coef,
-                    scale_slope = logsd_beta_coef
+        out <- list(mu_intercept = mu_coef,
+                    logsd_intercept = logsd_coef,
+                    mu_coef = mu_beta_coef,
+                    logsd_coef = logsd_beta_coef
                     )
         return(out)
     } else {
-        out <- list(location = mu_coef,
-                    scale = logsd_coef,
-                    location_slope = mu_beta_coef,
-                    scale_slope = logsd_beta_coef
+        out <- list(mu_intercept = mu_coef,
+                    logsd_intercept = logsd_coef,
+                    mu_coef = mu_beta_coef,
+                    logsd_coef = logsd_beta_coef
                     )
         return(out)
     }
