@@ -108,21 +108,21 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     }
 
     # Random effects
-    out$summary[c("mu_logsd_betas_random_sigma",
-                  "Omega_mean_logsd",
-                  "mu_random",
-                  "logsd_random",
-                  "mu_beta_random",
-                  "logsd_beta_random")] <- .summary_ranef(object, prob)
+    out$summary[c("random_sigma",
+                  "random_correlation",
+                  "random_mu_intercept",
+                  "random_logsd_intercept",
+                  "random_mu_coef",
+                  "random_logsd_coef")] <- .summary_ranef(object, prob)
 
     # Fixed effects
-    out$summary[c("mu_beta", "logsd_beta")] <- .summary_fixef(object, prob)
+    out$summary[c("mu_coef", "logsd_coef")] <- .summary_fixef(object, prob)
 
     # L2 scale predictors
     out$summary$zeta <- .summary_between(object, prob)$zeta
 
     # Eta correlations
-    out$summary$Omega_eta <- .summary_epsilon(object, prob)$Omega_eta
+    out$summary$factor_correlation <- .summary_epsilon(object, prob)$Omega_eta
 
     class(out) <- "summary.lmmelsm"
     return(out)
@@ -206,15 +206,8 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     Q_random_ind <- x$meta$pred_spec$Q_random_ind
 
     # Build RE names
-    re_names <- paste0(fnames, "MAGICSEP", rep(c("mu", "logsd"), each = F))
-    re_total <- 2 * F + F * P_random + F * Q_random
-
-    if(P_random > 0) {
-        re_names <- c(re_names, paste0(rep(fnames, each = P_random), "MAGICSEP", pnames$location[P_random_ind]))
-    }
-    if(Q_random > 0) {
-        re_names <- c(re_names, paste0(rep(fnames, each = Q_random), "MAGICSEP", pnames$scale[Q_random_ind]))
-    }
+    re_total <- 2 * F + F*P_random + F*Q_random
+    re_names <- .build_re_names(x$meta)
     re_int_names <- re_names[1:(2 * F)]
     re_slope_names <- re_names[(2 * F + 1):re_total]
 
@@ -407,7 +400,7 @@ print.summary.lmmelsm <- function(x, ...) {
         .newline()
         cat(facVarStr, "correlations")
         .newline()
-        with(x$summary, .print_table(Omega_eta, digits))
+        with(x$summary, .print_table(factor_correlation, digits))
     }
 
     # Location model
@@ -428,7 +421,7 @@ print.summary.lmmelsm <- function(x, ...) {
             cat(facVarStr, ": ")
             cat(IS$fname[[f]])
             .newline()
-            with(x$summary, .print_table(mu_beta[mu_beta$factor == IS$fname[[f]], ], digits, "factor"))
+            with(x$summary, .print_table(mu_coef[mu_coef$factor == IS$fname[[f]], ], digits, "factor"))
             .newline()
         }
     }
@@ -451,7 +444,7 @@ print.summary.lmmelsm <- function(x, ...) {
             cat(facVarStr, ": ")
             cat(IS$fname[[f]])
             .newline()
-            with(x$summary, .print_table(logsd_beta[logsd_beta$factor == IS$fname[[f]], ], digits, "factor"))
+            with(x$summary, .print_table(logsd_coef[logsd_coef$factor == IS$fname[[f]], ], digits, "factor"))
             .newline()
         }
     }
@@ -485,7 +478,7 @@ print.summary.lmmelsm <- function(x, ...) {
     }
     .sep()
     .newline()
-    .print_table(x$summary$mu_logsd_betas_random_sigma, digits)
+    .print_table(x$summary$random_sigma, digits)
 
     # RE Cors
     ## Mean estimates only.
@@ -496,18 +489,16 @@ print.summary.lmmelsm <- function(x, ...) {
     cat("Note: See summary(out)$summary$Omega_mean_logsd for full summary.")
     .sep()
     .newline()
-    cms <- x$summary$Omega_mean_logsd
+
+    cms <- x$summary$random_correlation
+
     re_total <- with(x$meta, indicator_spec$F*2 + pred_spec$P_random*indicator_spec$F + pred_spec$Q_random*indicator_spec$F)
-    re_names <- paste0(unlist(IS$fname), "_", rep(c("mu", "logsd"), each = IS$F))
-    if(x$meta$pred_spec$P_random > 0) {
-        re_names <- c(re_names, paste0(rep(unlist(IS$fname), each = PS$P_random), "_", PS$pname$location[PS$P_random_ind]))
-    }
-    if(x$meta$pred_spec$Q_random > 0) {
-        re_names <- c(re_names, paste0(rep(unlist(IS$fname), each = PS$Q_random), "_", PS$pname$scale[PS$Q_random_ind]))
-    }
+
+    re_names <- .build_re_names(x$meta, sep = "_")
+    
     corMat <- matrix(1, nrow = re_total, ncol = re_total)
-    corMat[lower.tri(corMat)] <- x$summary$Omega_mean_logsd$Mean
-    corMat[upper.tri(corMat)] <- x$summary$Omega_mean_logsd$SD
+    corMat[lower.tri(corMat)] <- x$summary$random_correlation$Mean
+    corMat[upper.tri(corMat)] <- x$summary$random_correlation$SD
     rownames(corMat) <- colnames(corMat) <- re_names
     print(corMat, digits = digits)
 
@@ -749,4 +740,24 @@ print.summary.lmmelsm <- function(x, ...) {
     }
 
     # TODO: BFMI and treedepth?
+}
+
+.build_re_names <- function(meta, sep = "MAGICSEP") {
+    pnames <- meta$pred_spec$pname
+    fnames <- unlist(meta$indicator_spec$fname)
+    F <- meta$indicator_spec$F
+    P_random <- meta$pred_spec$P_random
+    Q_random <- meta$pred_spec$Q_random
+    P_random_ind <- meta$pred_spec$P_random_ind
+    Q_random_ind <- meta$pred_spec$Q_random_ind
+
+    re_names <- paste0(fnames, sep, rep(c("mu", "logsd"), each = F))
+
+    if(P_random > 0) {
+        re_names <- c(re_names, paste0(rep(fnames, each = P_random), sep, pnames$location[P_random_ind], "_mu"))
+    }
+    if(Q_random > 0) {
+        re_names <- c(re_names, paste0(rep(fnames, each = Q_random), sep, pnames$scale[Q_random_ind], "_logsd"))
+    }
+    re_names
 }
