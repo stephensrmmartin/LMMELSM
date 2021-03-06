@@ -68,6 +68,15 @@ fit <- lmmelsm(list(Agreeableness ~ A_1 + A_2 + A_3 + A_4 + A_5 + A_6,
                     between ~ baseline),
                subject, sim_data)
 
+# Time-varying predictors, person-level predictors on location, scale, and between-group variance
+fit <- lmmelsm(list(Agreeableness ~ A_1 + A_2 + A_3 + A_4 + A_5 + A_6,
+                    Neuroticism ~ N_1 + N_2 + N_3 + N_4 + N_5 + N_6,
+                    location ~ x1 + baseline | x1,
+                    scale ~ x1 + x2 + baseline | x1 + x2,
+                    between ~ baseline),
+               subject, sim_data)
+
+
 # Non-latent Multivariate MELSM
 fit <- lmmelsm(list(observed ~ A_1 + N_1,
                     location ~ x1 + baseline|x1,
