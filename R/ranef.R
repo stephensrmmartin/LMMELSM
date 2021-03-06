@@ -91,13 +91,23 @@ coef.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
     P_random_ind <- PS$P_random_ind
     Q_random_ind <- PS$Q_random_ind
     re_total <- 2 * F + F * P_random + F * Q_random
+    latent <- x$meta$latent
 
     # Get samples
     ## Fixed effects
     ## Intercepts
-    ## Mu and logsd fixef = 0
+    ## Mu and logsd fixef = 0 WHEN LATENT is true
     mu_coef <- as.matrix(x$fit, pars = "mu_random")
     logsd_coef <- as.matrix(x$fit, pars = "logsd_random")
+    if(!latent) {
+        S <- nrow(mu_coef)
+        nu <- as.matrix(x$fit, pars = "nu")
+        sigma <- as.matrix(x$fit, pars = "sigma") # sigma = log_sigma
+        rep_cols <- rep(1:F, each = GS$K) # F=J=number of nu/sigma
+        mu_coef <- mu_coef + nu[, rep_cols]
+        logsd_coef <- logsd_coef + sigma[, rep_cols]
+    }
+    
 
     S <- nrow(mu_coef) # samples
 
