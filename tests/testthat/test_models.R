@@ -57,20 +57,31 @@ test_that("Specs return correct model dimensions", {
 
         # Summary class
         expect_s3_class(f_sum, "summary.lmmelsm")
+
         # L2_pred_only should be TRUE if x_loc and x_sca only have (less than) K unique values; except in bizarre edge cases.
         expect_equal(f_sum$meta$pred_spec$L2_pred_only, length(unique(f$meta$pred_spec$x_loc)) <= f$meta$group_spec$K & length(unique(f$meta$pred_spec$x_sca)) <= f$meta$group_spec$K)
+
         # ranef intercepts should have F * K rows.
         expect_equal(nrow(f_ranef$random_mu_intercept), f$meta$group_spec$K * f$meta$indicator_spec$F)
         expect_equal(nrow(f_ranef$random_logsd_intercept), f$meta$group_spec$K * f$meta$indicator_spec$F)
+
         # coef intercepts should also have F * K rows.
         expect_equal(nrow(f_coef$mu_intercept), f$meta$group_spec$K * f$meta$indicator_spec$F)
         expect_equal(nrow(f_coef$logsd_intercept), f$meta$group_spec$K * f$meta$indicator_spec$F)
+
         # ranef and coefs should be 4-length lists
         expect_length(f_coef, 4)
         expect_length(f_ranef, 4)
+
         # coefs should all equal ranefs for the intercepts
         for(i in seq_len(f$meta$indicator_spec$F * f$meta$group_spec$K)) {
-            expect_equal(f_ranef$random_mu_intercept[i,"Mean"], f_coef$mu_intercept[i,"Mean"])
+            if(f$meta$latent) {
+                expect_equal(f_ranef$random_mu_intercept[i,"Mean"], f_coef$mu_intercept[i,"Mean"])
+                expect_equal(f_ranef$random_logsd_intercept[i,"Mean"], f_coef$logsd_intercept[i,"Mean"])
+            }
+            if(!f$meta$latent) { # And equal once subtracting off fixed effects
+                expect_equal(f_ranef$random_mu_intercept[i, "Mean"], f_coef$mu_intercept[i, "Mean"] - rep(f_sum$summary$nu[,"Mean"], each = f$meta$group_spec$K)[i])
+            }
         }
     }
 
