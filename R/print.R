@@ -108,21 +108,21 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     }
 
     # Random effects
-    out$summary[c("mu_logsd_betas_random_sigma",
-                  "Omega_mean_logsd",
-                  "mu_random",
-                  "logsd_random",
-                  "mu_beta_random",
-                  "logsd_beta_random")] <- .summary_ranef(object, prob)
+    out$summary[c("random_sigma",
+                  "random_correlation",
+                  "random_mu_intercept",
+                  "random_logsd_intercept",
+                  "random_mu_coef",
+                  "random_logsd_coef")] <- .summary_ranef(object, prob)
 
     # Fixed effects
-    out$summary[c("mu_beta", "logsd_beta")] <- .summary_fixef(object, prob)
+    out$summary[c("mu_coef", "logsd_coef")] <- .summary_fixef(object, prob)
 
     # L2 scale predictors
     out$summary$zeta <- .summary_between(object, prob)$zeta
 
     # Eta correlations
-    out$summary$Omega_eta <- .summary_epsilon(object, prob)$Omega_eta
+    out$summary$factor_correlation <- .summary_epsilon(object, prob)$Omega_eta
 
     class(out) <- "summary.lmmelsm"
     return(out)
@@ -206,15 +206,8 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     Q_random_ind <- x$meta$pred_spec$Q_random_ind
 
     # Build RE names
-    re_names <- paste0(fnames, "MAGICSEP", rep(c("mu", "logsd"), each = F))
-    re_total <- 2 * F + F * P_random + F * Q_random
-
-    if(P_random > 0) {
-        re_names <- c(re_names, paste0(rep(fnames, each = P_random), "MAGICSEP", pnames$location[P_random_ind]))
-    }
-    if(Q_random > 0) {
-        re_names <- c(re_names, paste0(rep(fnames, each = Q_random), "MAGICSEP", pnames$scale[Q_random_ind]))
-    }
+    re_total <- 2 * F + F*P_random + F*Q_random
+    re_names <- .build_re_names(x$meta)
     re_int_names <- re_names[1:(2 * F)]
     re_slope_names <- re_names[(2 * F + 1):re_total]
 
@@ -407,7 +400,7 @@ print.summary.lmmelsm <- function(x, ...) {
         .newline()
         cat(facVarStr, "correlations")
         .newline()
-        with(x$summary, .print_table(Omega_eta, digits))
+        with(x$summary, .print_table(factor_correlation, digits))
     }
 
     # Location model
@@ -428,7 +421,7 @@ print.summary.lmmelsm <- function(x, ...) {
             cat(facVarStr, ": ")
             cat(IS$fname[[f]])
             .newline()
-            with(x$summary, .print_table(mu_beta[mu_beta$factor == IS$fname[[f]], ], digits, "factor"))
+            with(x$summary, .print_table(mu_coef[mu_coef$factor == IS$fname[[f]], ], digits, "factor"))
             .newline()
         }
     }
@@ -451,7 +444,7 @@ print.summary.lmmelsm <- function(x, ...) {
             cat(facVarStr, ": ")
             cat(IS$fname[[f]])
             .newline()
-            with(x$summary, .print_table(logsd_beta[logsd_beta$factor == IS$fname[[f]], ], digits, "factor"))
+            with(x$summary, .print_table(logsd_coef[logsd_coef$factor == IS$fname[[f]], ], digits, "factor"))
             .newline()
         }
     }
@@ -485,7 +478,7 @@ print.summary.lmmelsm <- function(x, ...) {
     }
     .sep()
     .newline()
-    .print_table(x$summary$mu_logsd_betas_random_sigma, digits)
+    .print_table(x$summary$random_sigma, digits)
 
     # RE Cors
     ## Mean estimates only.
@@ -496,18 +489,16 @@ print.summary.lmmelsm <- function(x, ...) {
     cat("Note: See summary(out)$summary$Omega_mean_logsd for full summary.")
     .sep()
     .newline()
-    cms <- x$summary$Omega_mean_logsd
+
+    cms <- x$summary$random_correlation
+
     re_total <- with(x$meta, indicator_spec$F*2 + pred_spec$P_random*indicator_spec$F + pred_spec$Q_random*indicator_spec$F)
-    re_names <- paste0(unlist(IS$fname), "_", rep(c("mu", "logsd"), each = IS$F))
-    if(x$meta$pred_spec$P_random > 0) {
-        re_names <- c(re_names, paste0(rep(unlist(IS$fname), each = PS$P_random), "_", PS$pname$location[PS$P_random_ind]))
-    }
-    if(x$meta$pred_spec$Q_random > 0) {
-        re_names <- c(re_names, paste0(rep(unlist(IS$fname), each = PS$Q_random), "_", PS$pname$scale[PS$Q_random_ind]))
-    }
+
+    re_names <- .build_re_names(x$meta, sep = "_")
+    
     corMat <- matrix(1, nrow = re_total, ncol = re_total)
-    corMat[lower.tri(corMat)] <- x$summary$Omega_mean_logsd$Mean
-    corMat[upper.tri(corMat)] <- x$summary$Omega_mean_logsd$SD
+    corMat[lower.tri(corMat)] <- x$summary$random_correlation$Mean
+    corMat[upper.tri(corMat)] <- x$summary$random_correlation$SD
     rownames(corMat) <- colnames(corMat) <- re_names
     print(corMat, digits = digits)
 
@@ -545,12 +536,16 @@ print.summary.lmmelsm <- function(x, ...) {
 ##' @title Compute posterior summaries.
 ##' @param lmmelsm lmmelsm object.
 ##' @param pars Char vector. Which stan param to summarize.
-##' @param prob Numeric (Default: .95; [0 - 1]). The desired mass to contain within the CrI.
+##' @param prob Numeric (Default: .95; `[0 - 1]`). The desired mass to contain within the CrI.
 ##' @return Matrix.
 ##' @author Stephen R. Martin
 ##' @keywords internal
 .summarize <- function(lmmelsm, pars, prob = .95) {
-    samps <- as.matrix(lmmelsm$fit, pars = pars)
+    if(inherits(lmmelsm, "lmmelsm")) {
+        samps <- as.matrix(lmmelsm$fit, pars = pars)
+    } else if (is.matrix(lmmelsm)) {
+        samps <- lmmelsm
+    }
     probs <- .prob_to_interval(prob)
     fun <- function(col) {
         m <- mean(col)
@@ -568,7 +563,7 @@ print.summary.lmmelsm <- function(x, ...) {
     return(samps.sum)
 }
 ##' @title Convert stan par-string to numeric columns.
-##' @param x String. E.g., "lambda[1,2]"
+##' @param x String. E.g., `"lambda[1,2]"`
 ##' @param labs Character vector (Optional). If supplied, provides the colnames for the matrix.
 ##' @return Numeric matrix.
 ##' @author Stephen R. Martin
@@ -591,7 +586,7 @@ print.summary.lmmelsm <- function(x, ...) {
 
 ##' Creates "tidy" summaries in lieu of the stan rownames.
 ##'
-##' .summarize creates an rstan-like summary with rownames, mat[1:R, 1:C].
+##' .summarize creates an rstan-like summary with rownames, \code{mat[1:R, 1:C]}.
 ##' \code{.tidy_summary(mat, c("rows", "cols"))} would then create two new columns, "rows" and "cols" with the indices in them.
 ##' If arguments are provided in \code{...}, then these indicate the mappings between the indices and labeled values.
 ##' E.g., \code{.tidy_summary(mat, c("rows", "cols"), c("A", "B"), c("C", "D"))} would create two new columns, "rows" and "cols", and replace rows = 1 with rows = A; cols=2 with cols = D, and so on.
@@ -599,7 +594,7 @@ print.summary.lmmelsm <- function(x, ...) {
 ##' @title Takes stan summary, returns summary with indices-as-columns.
 ##' @param x Output of .summarize
 ##' @param labs The labels for each parameter index. E.g., "predictor", "factor"
-##' @param ... Optional (but recommended). Mappings for indices. E.g., Index column 1 is replaced by ...[[1]][col1Indices].
+##' @param ... Optional (but recommended). Mappings for indices. E.g., Index column 1 is replaced by ...`[[1]][col1Indices]`.
 ##' @return Data frame.
 ##' @author Stephen R. Martin
 ##' @keywords internal
@@ -649,11 +644,11 @@ print.summary.lmmelsm <- function(x, ...) {
 ##' Helper for correlation-matrix summarize output.
 ##'
 ##' The .summarize function returns every redundant and constant element from a correlation matrix.
-##' This function returns the stan-strings (when \code{string = TRUE}, e.g., "[2,1]", "[3,1]"), or the row-index assuming column-major order.
+##' This function returns the stan-strings (when \code{string = TRUE}, e.g., \code{[2,1]}, \code{[3,1]}), or the row-index assuming column-major order.
 ##' @title Get indices for subsetting lower-tri summaries of square matrices. 
 ##' @param x Integer. Dimension of matrix.
-##' @param string Logical (Default: FALSE). Whether to return strings (e.g., "[2,1]", or row indices, assuming column-major ordering.)
-##' @return 
+##' @param string Logical (Default: FALSE). Whether to return strings (e.g., \code{[2,1]}, or row indices, assuming column-major ordering.)
+##' @return Charactor vector (if \code{string} is TRUE) or integer vector.
 ##' @author Stephen R. Martin
 ##' @keywords internal
 .full_to_lower_tri <- function(x, string = FALSE) {
@@ -745,4 +740,24 @@ print.summary.lmmelsm <- function(x, ...) {
     }
 
     # TODO: BFMI and treedepth?
+}
+
+.build_re_names <- function(meta, sep = "MAGICSEP") {
+    pnames <- meta$pred_spec$pname
+    fnames <- unlist(meta$indicator_spec$fname)
+    F <- meta$indicator_spec$F
+    P_random <- meta$pred_spec$P_random
+    Q_random <- meta$pred_spec$Q_random
+    P_random_ind <- meta$pred_spec$P_random_ind
+    Q_random_ind <- meta$pred_spec$Q_random_ind
+
+    re_names <- paste0(fnames, sep, rep(c("mu", "logsd"), each = F))
+
+    if(P_random > 0) {
+        re_names <- c(re_names, paste0(rep(fnames, each = P_random), sep, pnames$location[P_random_ind], "_mu"))
+    }
+    if(Q_random > 0) {
+        re_names <- c(re_names, paste0(rep(fnames, each = Q_random), sep, pnames$scale[Q_random_ind], "_logsd"))
+    }
+    re_names
 }

@@ -78,6 +78,8 @@
 ##' @author Stephen R. Martin
 ##' @rawNamespace import(rstan, except = loo)
 ##' @importFrom parallel detectCores
+##' @importFrom stats complete.cases dnorm formula model.frame model.matrix na.pass quantile rnorm
+##' @importFrom utils head strcapture
 ##' @export
 lmmelsm <- function(formula, group, data, ...) {
     # Set defaults
@@ -88,7 +90,6 @@ lmmelsm <- function(formula, group, data, ...) {
     stan_args$cores <- dots$cores %IfNull% detectCores()
     stan_args$chains <- dots$chains %IfNull% 4
     stan_args$iter <- dots$iter %IfNull% 2000
-    stan_args$prior_only <- dots$prior_only %IfNull% FALSE
     stan_args$init <- dots$init %IfNull% 0
     ## Remove from dots the things that are specified here
     dots[names(dots) %in% names(stan_args)] <- NULL
@@ -100,8 +101,8 @@ lmmelsm <- function(formula, group, data, ...) {
         stan_args$object <- stanmodels$lmmelsmPredObs2
     }
     stan_args$data <- d$stan_data
-    stan_args$data$prior_only <- stan_args$prior_only
-    stan_args$prior_only <- NULL
+    stan_args$data$prior_only <- dots$prior_only %IfNull% FALSE
+    dots$prior_only <- NULL
 
     pars <- c("nu",
               "lambda",
@@ -399,8 +400,6 @@ lmmelsm <- function(formula, group, data, ...) {
         }
         return(out)
     }
-
-    return(rhs_name)
 }
 
 ##' @title Combines multiple formulas' RHS into one.
@@ -474,7 +473,7 @@ lmmelsm <- function(formula, group, data, ...) {
 ##' E.g., whether location and scale are covariates are the same across all n_k observations of each K.
 ##' This is important for efficiency reasons.
 ##' If the covariates are invariant across repeated observations of the given group k, for all K, then we can compute predicted values once, and broadcast the prediction, rather than compute the prediction for every single row.
-##' Specifically, it detects if all x == x[1], where x is a group's data, for each column in mf.
+##' Specifically, it detects if all \code{x == x[1]}, where x is a group's data, for each column in mf.
 ##' @title Detect whether the predictors are L2-only
 ##' @param mf Data frame for predictors. Should contain no missings.
 ##' @param group Grouping variable for the model frame.

@@ -2,6 +2,7 @@
 % Please edit documentation in R/loo.R
 \name{loo.lmmelsm}
 \alias{loo.lmmelsm}
+\alias{loo}
 \title{loo method for LMMELSM objects.}
 \usage{
 \method{loo}{lmmelsm}(x, type = c("observation", "group"), ...)

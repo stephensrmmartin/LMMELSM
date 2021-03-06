@@ -1,19 +1,20 @@
 Package: LMMELSM
 Title: Fit Latent Multivariate Mixed Effects Location Scale Models
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: 
     person(given = "Stephen",
            family = "Martin",
            role = c("aut", "cre"),
            email = "stephenSRMMartin@gmail.com",
            comment = c(ORCID = "0000-0001-8085-2390"))
-Description: Fits Latent Multivariate Mixed EFfects Location Scale Models. It is Multivariate, because multiple outcomes' locations and scales can be modeled simultaneously. It is Latent, because the outcomes are latent variables, manifest by specified indicators.
-License: GPL-3
+Description: Fits Latent Multivariate Mixed Effects Location Scale Models. It is Multivariate, because multiple outcomes' locations and scales can be modeled simultaneously. It is Latent, because the outcomes are latent variables, manifest by specified indicators.
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 Biarch: true
+BugReports: https://github.com/stephenSRMMartin/LMMELSM
 Depends: 
     R (>= 3.4.0)
 Imports: 
@@ -21,7 +22,11 @@ Imports:
     Rcpp (>= 0.12.0),
     rstan (>= 2.18.1),
     rstantools (>= 2.0.0),
-    parallel (>= 3.6.0)
+    parallel (>= 3.6.0),
+    nlme (>= 3.0),
+    Formula (>= 1.2),
+    MASS (>= 7.0),
+    loo (>= 2.3.0)
 LinkingTo: 
     BH (>= 1.66.0),
     Rcpp (>= 0.12.0),
@@ -29,3 +34,5 @@ LinkingTo:
     rstan (>= 2.18.1),
     StanHeaders (>= 2.18.0)
 SystemRequirements: GNU make
+Suggests: 
+    testthat

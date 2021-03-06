@@ -1,4 +1,5 @@
 ^\.travis\.yml$
 .Rhistory
-test
+^test$
 ^LICENSE\.md$
+^data-raw$
