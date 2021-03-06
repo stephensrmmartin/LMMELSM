@@ -17,7 +17,7 @@ Instead of predicting the expected values and variances of observed or computed 
 Assuming an adequate measurement model, the LMMELSM therefore models the variance of a reduced-error score.
 
 LMMELSM is therefore useful for modeling conditional and group-specific latent means and variances.
-One such example is modeling the intraindividual variability of latent scores of a persons over time in an experience sampling methodology over time.
+One such example is modeling the intraindividual variability of latent scores of a persons over time in an experience sampling methodology.
 Another example is modeling the heterogeneity of individuals' latent means from person-level covariates.
 
 LMMELSM currently supports:
