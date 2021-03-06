@@ -79,8 +79,4 @@ test_that("lmmelsm returns correct structures.", {
                              "logsd_coef"))
     expect_equal(nrow(fit_coef$mu_intercept), K*F)
     expect_equal(nrow(fit_coef$logsd_intercept), K*F)
-    for(i in seq_len(K)) {
-        expect_equal(fit_ranef$random_mu_intercept[i,"Mean"], fit_coef$mu_intercept[i,"Mean"])
-        expect_equal(fit_ranef$random_logsd_intercept[i,"Mean"], fit_coef$logsd_intercept[i,"Mean"])
-    }
 })
