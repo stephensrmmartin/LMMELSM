@@ -3,8 +3,8 @@
 ##' Extracts the random effects from the lmmelsm object.
 ##' Note that this is different from the random \emph{coefficients}.
 ##' E.g., if \eqn{\beta_{0i} = \beta_0 + u_{0i}}, then \code{coef} extracts \eqn{\beta_{0i}} and \code{ranef} extracts \eqn{u_{0i}}.
-##' @title Extract random effects from lmmelsm objects.
-##' @return List of ranef summaries, or samples (if summarize = FALSE).
+##' @title Extract random effects.
+##' @return List of ranef summaries (random_mu_intercept, random_logsd_intercept, random_mu_coef, and random_logsd_coef), or samples (if summarize = FALSE).
 ##' @author Stephen R. Martin
 ##' @importFrom nlme ranef
 ##' @export ranef
@@ -64,7 +64,7 @@ ranef.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
 ##' Extracts all group-specific coefficients from lmmelsm object.
 ##' Note that this is different from \code{\link{ranef}}.
 ##' Whereas \code{ranef} extracts the zero-centered random effects, \code{coef} extracts the group-specific effects, defined as the sum of the fixed effect and random effect.
-##' @title Extract random coefficients for each group.
+##' @title Extract group-specific coefficients.
 ##' @param object lmmelsm object.
 ##' @param prob Numeric (Default: .95). Amount of probability mass contained in the credible interval.
 ##' @param summarize Logical (Default: TRUE). Whether to return posterior summaries (TRUE) or MCMC samples (FALSE).

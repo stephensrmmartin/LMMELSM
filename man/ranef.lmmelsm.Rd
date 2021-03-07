@@ -3,7 +3,7 @@
 \name{ranef.lmmelsm}
 \alias{ranef.lmmelsm}
 \alias{ranef}
-\title{Extract random effects from lmmelsm objects.}
+\title{Extract random effects.}
 \usage{
 \method{ranef}{lmmelsm}(object, prob = 0.95, summarize = TRUE, ...)
 }
@@ -17,7 +17,7 @@
 \item{...}{Not used.}
 }
 \value{
-List of ranef summaries, or samples (if summarize = FALSE).
+List of ranef summaries (random_mu_intercept, random_logsd_intercept, random_mu_coef, and random_logsd_coef), or samples (if summarize = FALSE).
 }
 \description{
 Ranef method for lmmelsm objects.
