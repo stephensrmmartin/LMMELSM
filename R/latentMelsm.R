@@ -1,10 +1,8 @@
-##' Fits a MELSM on latent variables.
-##'
-##' Currently supports multiple endogenous latent factors  and exogenous observed variables.
+##' Fits a mixed effects location scale model on one or more observed or latent variables.
+##' Currently supports multiple endogenous latent factors or observed outcomes,  and exogenous observed variables.
 ##' Data are assumed to be two-level data. I.e., multiple indicators, repeatedly measured within group.
-##' Currently assumes measurement invariance (i.e., the measurement model params are equivalent across groups).
-##' Excludes rows with missing data.
-##' The Stan model currently uses the unit-variance identification.
+##' Currently assumes measurement invariance (i.e., the measurement model params are equivalent across groups) and a unit-variance identification for latent variables.
+##' Excludes rows with missing data (and warns the user).
 ##'
 ##' @section Model specification:
 ##' 
@@ -57,7 +55,7 @@
 ##'
 ##' specifies a between-group scale model on the SDs of the location and scale intercepts for each factor.
 ##'
-##' If you want to fit a non-latent multivariate MELSM, you can now do so using new formula syntax:
+##' If you want to fit a non-latent multivariate MELSM, use "observed" as the LHS:
 ##'
 ##' For example, if y1, y2, and y3 are three observed outcome variables, then
 ##' 
@@ -65,11 +63,11 @@
 ##'
 ##' would fit an M-MELSM.
 ##' Location, scale, and between-group models can still be specified, but they will model the observed variables, rather than latent variables.
-##' You cannot currently have both observed and latent variables in the same model.
+##' You cannot currently have both observed and latent outcomes in the same model.
 ##'
 ##' \emph{Note}: Because \code{location}, \code{scale}, \code{between}, and \code{observed} represent special formulas, latent factors cannot be named location, scale, between, nor observed.
 ##' It is assumed that any formula with \code{location}, \code{scale}, or \code{between} on the left-hand side (LHS) is a predictive formula, not a latent variable specification.
-##' @title Fit two-level latent MELSM.
+##' @title Specify and fit the (latent) (multivariate) melsm.
 ##' @param formula Formula or list of formulas. LHS of each should be factor name, RHS should be indicators.
 ##' @param group Raw grouping variable name (not character).
 ##' @param data Data frame.
