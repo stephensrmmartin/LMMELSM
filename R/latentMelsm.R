@@ -79,6 +79,32 @@
 ##' @importFrom stats complete.cases dnorm formula model.frame model.matrix na.pass quantile rnorm
 ##' @importFrom utils head strcapture
 ##' @export
+##' @examples
+##' \dontrun{
+##' data(sim_data)
+##'
+##' # Fit LMMELSM with two latent factors (A and B),
+##' # Location model with one random coefficient
+##' # Scale model with one random coefficient
+##' # Between-group scale model with one covariate
+##' fit <- lmmelsm(list(A ~ A_1 + A_2 + A_3 + A_4 + A_5 + A_6,
+##'                     B ~ N_1 + N_2 + N_3 + N_4 + N_5 + N_6,
+##'                     location ~ x1 + baseline | x1,
+##'                     scale ~ x2 + baseline | x2,
+##'                     between ~ baseline),
+##'                subject, sim_data
+##'               )
+##'
+##' # Summarize fit
+##' summary(fit)
+##'
+##' # Get random effects
+##' ranef(fit)
+##' # Get group-specific parameter values
+##' coef(fit)
+##' # Get approximate leave-one-out
+##' loo(fit)
+##' }
 lmmelsm <- function(formula, group, data, ...) {
     # Set defaults
     dots <- list(...)

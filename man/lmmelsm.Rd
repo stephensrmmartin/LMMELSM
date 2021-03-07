@@ -90,6 +90,33 @@ You cannot currently have both observed and latent outcomes in the same model.
 It is assumed that any formula with \code{location}, \code{scale}, or \code{between} on the left-hand side (LHS) is a predictive formula, not a latent variable specification.
 }
 
+\examples{
+\dontrun{
+data(sim_data)
+
+# Fit LMMELSM with two latent factors (A and B),
+# Location model with one random coefficient
+# Scale model with one random coefficient
+# Between-group scale model with one covariate
+fit <- lmmelsm(list(A ~ A_1 + A_2 + A_3 + A_4 + A_5 + A_6,
+                    B ~ N_1 + N_2 + N_3 + N_4 + N_5 + N_6,
+                    location ~ x1 + baseline | x1,
+                    scale ~ x2 + baseline | x2,
+                    between ~ baseline),
+               subject, sim_data
+              )
+
+# Summarize fit
+summary(fit)
+
+# Get random effects
+ranef(fit)
+# Get group-specific parameter values
+coef(fit)
+# Get approximate leave-one-out
+loo(fit)
+}
+}
 \author{
 Stephen R. Martin
 }
