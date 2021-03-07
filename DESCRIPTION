@@ -2,11 +2,16 @@ Package: LMMELSM
 Title: Fit Latent Multivariate Mixed Effects Location Scale Models
 Version: 0.1.0
 Authors@R: 
-    person(given = "Stephen",
+    c(person(given = "Stephen",
            family = "Martin",
            role = c("aut", "cre"),
            email = "stephenSRMMartin@gmail.com",
-           comment = c(ORCID = "0000-0001-8085-2390"))
+           comment = c(ORCID = "0000-0001-8085-2390")),
+      person(given = "Philippe",
+             family = "Rast",
+	     role = "aut",
+	     email = "rast.ph@gmail.com",
+	     comment = c(ORCID = "0000-0003-3630-6629")))
 Description: Fits Latent Multivariate Mixed Effects Location Scale Models. It is Multivariate, because multiple outcomes' locations and scales can be modeled simultaneously. It is Latent, because the outcomes are latent variables, manifest by specified indicators.
 License: MIT + file LICENSE
 Encoding: UTF-8
