@@ -38,8 +38,7 @@ remotes::install_github("stephensrmmartin/LMMELSM")
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
-
+In this example, increasingly complex MELSMs are modeled, and demonstrate the simple formula syntax.
 ``` r
 library(LMMELSM)
 
