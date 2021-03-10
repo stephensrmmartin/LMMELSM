@@ -24,18 +24,23 @@ predict.lmmelsm <- function(object, newdata = NULL, prob = .95, summarize = TRUE
     }
 
     # Get samples
-    zeta <- .extract_transform_to_list(object$fit, par = "zeta")
     random_sigma <- .extract_transform_to_list(object$fit, par = "mu_logsd_betas_random_sigma")
     random_cor <- .extract_transform_to_list(object$fit, par = "Omega_mean_logsd")
+    if(object$meta$pred_spec$R > 0) {
+        zeta <- .extract_transform_to_list(object$fit, par = "zeta")
+    } else {
+        zeta <- lapply(seq_len(length(random_sigma)), function(s){0})
+    }
 
-    mu_beta <- .extract_transform_to_list(object$fit, par = "mu_beta")
-    logsd_beta <- .extract_transform_to_list(object$fit, par = "logsd_beta")
+    if(object$meta$pred_spec$P > 0) {
+        mu_beta <- .extract_transform_to_list(object$fit, par = "mu_beta")
+    }
+    if(object$meta$pred_spec$Q > 0) {
+        logsd_beta <- .extract_transform_to_list(object$fit, par = "logsd_beta")
+    }
     factor_cor <- .extract_transform_to_list(object$fit, par = "Omega_eta")
 
-    mu_random <- .extract_transform_to_list(object$fit, par = "mu_random")
-    logsd_random <- .extract_transform_to_list(object$fit, par = "logsd_random")
-    mu_beta_random <- .extract_transform_to_list(object$fit, par = "mu_beta_random")
-    logsd_beta_random <- .extract_transform_to_list(object$fit, par = "logsd_beta_random")
+    random <- .random_to_z(fit)
 
     # Set up predictions
 
@@ -45,9 +50,9 @@ predict.lmmelsm <- function(object, newdata = NULL, prob = .95, summarize = TRUE
 
     for(n in seq_len(N_pred)) { # Each row of newdata
         # Between-group variance
-        ## pred_pred_spec$x_bet[n,, drop = FALSE] %*% 
-        between <- random_sigma
-
+        # Random effects
+        # Eta, SD(Eta)
+        # Indicators, if specified
     }
 }
 
