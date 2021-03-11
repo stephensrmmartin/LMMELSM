@@ -513,3 +513,140 @@ lmmelsm <- function(formula, group, data, ...) {
     })
     return(all(col_same))
 }
+
+has_latent <- function(lmmelsm) {
+    lmmelsm$meta$latent
+}
+
+has_location <- function(lmmelsm) {
+    lmmelsm$meta$pred_spec$P > 0
+}
+
+has_scale <- function(lmmelsm) {
+    lmmelsm$meta$pred_spec$Q > 0
+}
+
+has_between <- function(lmmelsm) {
+    lmmelsm$meta$pred_spec$R > 0
+}
+
+has_random_location <- function(lmmelsm) {
+    lmmelsm$meta$pred_spec$P_random > 0
+}
+
+has_random_scale <- function(lmmelsm) {
+    lmmelsm$meta$pred_spec$Q_random > 0
+}
+
+get_number_re <- function(lmmelsm) {
+    F <- get_F(lmmelsm)
+    P_random <- get_P_random(lmmelsm)
+    Q_random <- get_Q_random(lmmelsm)
+
+    2 * F + P_random * F + Q_random * F
+}
+
+get_re_indices <- function(lmmelsm) {
+    F <- lmmelsm$meta$indicator_spec$F
+    P_random <- lmmelsm$meta$pred_spec$P_random
+    Q_random <- lmmelsm$meta$pred_spec$Q_random
+
+    mu_random <- 1:F
+    logsd_random <- (F+1):(2*F)
+    mu_beta_random <- if(has_random_location(lmmelsm)) {
+                          (2*F + 1):(2*F + P_random*F)
+                      } else {NA}
+    logsd_beta_random <- if(has_random_scale(lmmelsm)) {
+                             (2*F + P_random*F + 1):(2*F + P_random*F + Q_random*F)
+                         } else {NA}
+
+    nlist(mu_random,
+          logsd_random,
+          mu_beta_random,
+          logsd_beta_random)
+}
+
+get_factor_names <- function(lmmelsm) {
+    unlist(lmmelsm$meta$indicator_spec$fname)
+}
+
+get_indicator_names <- function(lmmelsm) {
+    lmmelsm$meta$indicator_spec$mname
+}
+
+get_predictor_names <- function(lmmelsm, which = c("location", "scale", "between")) {
+    mod <- match.arg(which)
+    lmmelsm$meta$pred_spec$pname[[mod]]
+}
+
+get_group_name <- function(lmmelsm) {
+    lmmelsm$meta$group_spec$name
+}
+
+get_group_numeric <- function(lmmelsm) {
+    lmmelsm$meta$group_spec$numeric
+}
+
+get_group_labels <- function(lmmelsm) {
+    lmmelsm$meta$group_spec$data
+}
+
+get_group_map <- function(lmmelsm) {
+    lmmelsm$meta$group_spec$map
+}
+
+get_K <- function(lmmelsm) {
+    lmmelsm$meta$group_spec$K
+}
+
+get_F <- function(lmmelsm) {
+    lmmelsm$meta$indicator_spec$F
+}
+
+get_J <- function(lmmelsm) {
+    lmmelsm$meta$indicator_spec$J
+}
+
+get_P <- function(lmmelsm) {
+    lmmelsm$meta$pred_spec$P
+}
+
+get_Q <- function(lmmelsm) {
+    lmmelsm$meta$pred_spec$Q
+}
+
+get_R <- function(lmmelsm) {
+    lmmelsm$meta$pred_spec$R
+}
+
+get_P_random <- function(lmmelsm) {
+    lmmelsm$meta$pred_spec$P_random
+}
+
+get_Q_random <- function(lmmelsm) {
+    lmmelsm$meta$pred_spec$Q_random
+}
+
+get_P_random_ind <- function(lmmelsm) {
+    lmmelsm$meta$pred_spec$P_random_ind
+}
+
+get_Q_random_ind <- function(lmmelsm) {
+    lmmelsm$meta$pred_spec$Q_random_ind
+}
+
+get_N <- function(lmmelsm) {
+    lmmelsm$meta$indicator_spec$N
+}
+
+has_multivariate <- function(lmmelsm) {
+    lmmelsm$meta$indicator_spec$F > 1
+}
+
+get_S <- function(lmmelsm) {
+    (lmmelsm$fit@stan_args[[1]]$iter - lmmelsm$fit@stan_args[[1]]$warmup) * get_number_chains(lmmelsm)
+}
+
+get_number_chains <- function(lmmelsm) {
+    lmmelsm$stan_args$chains
+}
