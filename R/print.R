@@ -312,7 +312,7 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
         zeta <- .summarize(x, pars = "zeta", prob = prob)
 
         # Tidy
-        zeta <- .tidy_summary(zeta, c("predictor", "param"), get_predictor_names("between"), re_int_names)
+        zeta <- .tidy_summary(zeta, c("predictor", "param"), get_predictor_names(x, "between"), re_int_names)
 
         # Separate
         zeta[, c("factor", "param")] <- .magicsep(zeta[, "param"], c("factor", "param"))
