@@ -68,7 +68,7 @@
 ##' \emph{Note}: Because \code{location}, \code{scale}, \code{between}, and \code{observed} represent special formulas, latent factors cannot be named location, scale, between, nor observed.
 ##' It is assumed that any formula with \code{location}, \code{scale}, or \code{between} on the left-hand side (LHS) is a predictive formula, not a latent variable specification.
 ##' @title Specify and fit the (latent) (multivariate) melsm.
-##' @param formula Formula or list of formulas. LHS of each should be factor name, RHS should be indicators.
+##' @param formula Formula or list of formulas. See section on model specification.
 ##' @param group Raw grouping variable name (not character).
 ##' @param data Data frame.
 ##' @param ... Options passed onto \code{\link[rstan]{sampling}}
@@ -80,7 +80,7 @@
 ##' @importFrom utils head strcapture
 ##' @export
 ##' @examples
-##' \dontrun{
+##' \donttest{
 ##' data(sim_data)
 ##'
 ##' # Fit LMMELSM with two latent factors (A and B),
@@ -92,7 +92,7 @@
 ##'                     location ~ x1 + baseline | x1,
 ##'                     scale ~ x2 + baseline | x2,
 ##'                     between ~ baseline),
-##'                subject, sim_data
+##'                subject, sim_data, cores = 2
 ##'               )
 ##'
 ##' # Summarize fit
