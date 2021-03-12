@@ -3,6 +3,8 @@ predict.lmmelsm <- function(object, newdata = NULL, prob = .95, summarize = TRUE
     what <- match.arg(what)
     include_error <- include_error
 
+    facVar <- ifelse(has_latent(x), "factor", "variable")
+
     # If no newdata, use old data.
     newdata <- newdata %IfNull% x$data
 
@@ -157,7 +159,42 @@ predict.lmmelsm <- function(object, newdata = NULL, prob = .95, summarize = TRUE
 
     }
 
-    pred_list
+    # Restructure
+    for(n in seq_len(N)) {
+        # Each list element to S-rows matrix
+        pred_list[[n]] <- lapply(pred_list[[n]], function(l) {
+            do.call(rbind, l)
+        })
+
+        # Rename
+        if(which == "latent") {
+            eta_names <- paste0("eta[",n, ",", seq_len(F),"]")
+            eta_logsd_names <- paste0("eta_logsd[",n, ",", seq_len(F),"]")
+            colnames(pred_list[[n]][["eta"]]) <- eta_names
+            colnames(pred_list[[n]][["eta_logsd"]]) <- eta_logsd_names
+        } else if(which == "indicator"){
+            y_names <- paste0("y[",n,",", seq_len(get_J(x)), "]")
+            colnames(pred_list[[n]][["y"]]) <- y_names
+        }
+
+        if(summarize) {
+            if(which == "latent") {
+                pred_list[[n]] <- lapply(pred_list[[n]], .summarize, prob = prob)
+                pred_list[[n]] <- lapply(pred_list[[n]], .tidy_summary, labs = c("observation", facVar), seq_len(N), get_factor_names(x))
+                pred_list[[n]] <- lapply(pred_list[[n]], .summary_rearrange, cols = c("observation", facVar))
+            } else if(which == "indicators") {
+                pred_list[[n]] <- lapply(pred_list[[n]], .summarize, prob = prob)
+                pred_list[[n]] <- lapply(pred_list[[n]], .tidy_summary, labs = c("observation", "indicator"), seq_len(N), get_indicator_names(x))
+                pred_list[[n]] <- lapply(pred_list[[n]], .summary_rearrange, cols = c("observation", indicator))
+            }
+        }
+    }
+
+    if(summarize) {
+        # End goal: List of each type ([eta, eta_logsd], [y]); rbinded across N
+        # Should we just compute all predictions, rather than indicators vs latents?
+    }
+
 }
 
 .lambda_matrix <- function(F, J, vec) {
