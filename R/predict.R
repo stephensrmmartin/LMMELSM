@@ -1,6 +1,5 @@
-predict.lmmelsm <- function(object, newdata = NULL, prob = .95, summarize = TRUE, what = c("latent", "indicators"), include_error = TRUE, ...) {
+predict.lmmelsm <- function(object, newdata = NULL, prob = .95, summarize = TRUE,  include_error = TRUE, ...) {
     x <- object
-    what <- match.arg(what)
     include_error <- include_error
 
     facVar <- ifelse(has_latent(x), "factor", "variable")
@@ -140,22 +139,18 @@ predict.lmmelsm <- function(object, newdata = NULL, prob = .95, summarize = TRUE
             })
         }
         # Return if predicting latents
-        if(what == "latent") {
-            pred_list[[n]] <- nlist(eta, eta_logsd)
-        }
+        pred_list[[n]] <- nlist(eta, eta_logsd)
         
         # Indicators, if specified
-        if(what == "indicators") {
+        y <- lapply(seq_len(S), function(s) {
+            eta[[s]] %*% lambda[[s]] + nu[[s]]
+        })
+        if(include_error) {
             y <- lapply(seq_len(S), function(s) {
-                eta[[s]] %*% lambda[[s]] + nu[[s]]
+                y[[s]] + rnorm(J, 0, sigma[[s]])
             })
-            if(include_error) {
-                y <- lapply(seq_len(S), function(s) {
-                    y[[s]] + rnorm(J, 0, sigma[[s]])
-                })
-            }
-            pred_list[[n]] <- nlist(y)
         }
+        pred_list[[n]][["y"]] <- nlist(y)
 
     }
 
@@ -167,26 +162,21 @@ predict.lmmelsm <- function(object, newdata = NULL, prob = .95, summarize = TRUE
         })
 
         # Rename
-        if(which == "latent") {
-            eta_names <- paste0("eta[",n, ",", seq_len(F),"]")
-            eta_logsd_names <- paste0("eta_logsd[",n, ",", seq_len(F),"]")
-            colnames(pred_list[[n]][["eta"]]) <- eta_names
-            colnames(pred_list[[n]][["eta_logsd"]]) <- eta_logsd_names
-        } else if(which == "indicator"){
-            y_names <- paste0("y[",n,",", seq_len(get_J(x)), "]")
-            colnames(pred_list[[n]][["y"]]) <- y_names
-        }
+        eta_names <- paste0("eta[",n, ",", seq_len(F),"]")
+        eta_logsd_names <- paste0("eta_logsd[",n, ",", seq_len(F),"]")
+        y_names <- paste0("y[",n,",", seq_len(get_J(x)), "]")
+        colnames(pred_list[[n]][["eta"]]) <- eta_names
+        colnames(pred_list[[n]][["eta_logsd"]]) <- eta_logsd_names
+        colnames(pred_list[[n]][["y"]]) <- y_names
 
         if(summarize) {
-            if(which == "latent") {
-                pred_list[[n]] <- lapply(pred_list[[n]], .summarize, prob = prob)
-                pred_list[[n]] <- lapply(pred_list[[n]], .tidy_summary, labs = c("observation", facVar), seq_len(N), get_factor_names(x))
-                pred_list[[n]] <- lapply(pred_list[[n]], .summary_rearrange, cols = c("observation", facVar))
-            } else if(which == "indicators") {
-                pred_list[[n]] <- lapply(pred_list[[n]], .summarize, prob = prob)
-                pred_list[[n]] <- lapply(pred_list[[n]], .tidy_summary, labs = c("observation", "indicator"), seq_len(N), get_indicator_names(x))
-                pred_list[[n]] <- lapply(pred_list[[n]], .summary_rearrange, cols = c("observation", indicator))
-            }
+            pred_list[[n]][c("eta","eta_logsd")] <- lapply(pred_list[[n]][c("eta","eta_logsd")], .summarize, prob = prob)
+            pred_list[[n]][c("eta","eta_logsd")] <- lapply(pred_list[[n]][c("eta","eta_logsd")], .tidy_summary, labs = c("observation", facVar), seq_len(N), get_factor_names(x))
+            pred_list[[n]][c("eta","eta_logsd")] <- lapply(pred_list[[n]][c("eta","eta_logsd")], .summary_rearrange, cols = c("observation", facVar))
+
+            pred_list[[n]]["y"] <- .summarize(pred_list[[n]][["y"]], prob = prob)
+            pred_list[[n]]["y"] <- .tidy_summary(pred_list[[n]][["y"]], labs = c("observation", "indicator"), seq_len(N), .get_indicator_names(x))
+            pred_list[[n]]["y"] <- .summary_rearrange(pred_list[[n]][["y"]], cols = c("observation", "indicator"))
         }
     }
 
