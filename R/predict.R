@@ -141,18 +141,22 @@ predict.lmmelsm <- function(object, newdata = NULL, prob = .95, summarize = TRUE
         # Return if predicting latents
         pred_list[[n]] <- nlist(eta, eta_logsd)
         
-        # Indicators, if specified
-        y <- lapply(seq_len(S), function(s) {
-            eta[[s]] %*% lambda[[s]] + nu[[s]]
-        })
-        if(include_error) {
+        # Indicators, if latent; if not latent, then y and eta are the same
+        y <- NA
+        if(has_latent(x)) {
             y <- lapply(seq_len(S), function(s) {
-                y[[s]] + rnorm(J, 0, sigma[[s]])
+                eta[[s]] %*% lambda[[s]] + nu[[s]]
             })
+            if(include_error) {
+                y <- lapply(seq_len(S), function(s) {
+                    y[[s]] + rnorm(J, 0, sigma[[s]])
+                })
+            }
+        } else if(!has_latent(x)) {
+            y <- pred_list[[n]]["eta"]
         }
         pred_list[[n]][["y"]] <- nlist(y)
-
-    }
+    } # For each n in 1:N
 
     # Restructure
     for(n in seq_len(N)) {
@@ -181,8 +185,7 @@ predict.lmmelsm <- function(object, newdata = NULL, prob = .95, summarize = TRUE
     }
 
     if(summarize) {
-        # End goal: List of each type ([eta, eta_logsd], [y]); rbinded across N
-        # Should we just compute all predictions, rather than indicators vs latents?
+        # End goal: List of each type ([eta, eta_logsd, y]); rbinded across N
     }
 
 }
