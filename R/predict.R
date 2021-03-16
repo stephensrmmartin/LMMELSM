@@ -71,6 +71,7 @@ predict.lmmelsm <- function(object, newdata = NULL, prob = .95, summarize = TRUE
         lambda <- .extract_transform_to_list(object$fit, par = "lambda")
         sigma <- .extract_transform_to_list(object$fit, par = "sigma")
     }
+    nu <- .extract_transform_to_list(object$fit, par = "nu")
 
     # Set up predictions
 
@@ -148,7 +149,7 @@ predict.lmmelsm <- function(object, newdata = NULL, prob = .95, summarize = TRUE
         # Add eta realizations
         if(include_error) {
             eta <- lapply(seq_len(S), function(s) {
-                D <- diag(exp(eta_logsd[[s]][,]))
+                D <- diag(exp(eta_logsd[[s]][,]), F, F)
                 cov_matrix <- D %*% factor_cor[[s]] %*% D
                 eta[[s]] + mvrnorm(1, rep(0, F), Sigma = cov_matrix)
             })
@@ -160,7 +161,7 @@ predict.lmmelsm <- function(object, newdata = NULL, prob = .95, summarize = TRUE
         y <- NA
         if(has_latent(x)) {
             y <- lapply(seq_len(S), function(s) {
-                eta[[s]] %*% lambda[[s]] + nu[[s]]
+                eta[[s]] %*% lambda[[s]] + t(nu[[s]])
             })
             if(include_error) {
                 y <- lapply(seq_len(S), function(s) {
@@ -168,9 +169,9 @@ predict.lmmelsm <- function(object, newdata = NULL, prob = .95, summarize = TRUE
                 })
             }
         } else if(!has_latent(x)) {
-            y <- pred_list[[n]]["eta"]
+            y <- pred_list[[n]][["eta"]]
         }
-        pred_list[[n]][["y"]] <- nlist(y)
+        pred_list[[n]][["y"]] <- y
     } # For each n in 1:N
 
     # Restructure
@@ -193,15 +194,16 @@ predict.lmmelsm <- function(object, newdata = NULL, prob = .95, summarize = TRUE
             pred_list[[n]][c("eta","eta_logsd")] <- lapply(pred_list[[n]][c("eta","eta_logsd")], .tidy_summary, labs = c("observation", facVar), seq_len(N), get_factor_names(x))
             pred_list[[n]][c("eta","eta_logsd")] <- lapply(pred_list[[n]][c("eta","eta_logsd")], .summary_rearrange, cols = c("observation", facVar))
 
-            pred_list[[n]]["y"] <- .summarize(pred_list[[n]][["y"]], prob = prob)
-            pred_list[[n]]["y"] <- .tidy_summary(pred_list[[n]][["y"]], labs = c("observation", "indicator"), seq_len(N), .get_indicator_names(x))
-            pred_list[[n]]["y"] <- .summary_rearrange(pred_list[[n]][["y"]], cols = c("observation", "indicator"))
+            pred_list[[n]][["y"]] <- .summarize(pred_list[[n]][["y"]], prob = prob)
+            pred_list[[n]][["y"]] <- .tidy_summary(pred_list[[n]][["y"]], labs = c("observation", "indicator"), seq_len(N), get_indicator_names(x))
+            pred_list[[n]][["y"]] <- .summary_rearrange(pred_list[[n]][["y"]], cols = c("observation", "indicator"))
         }
     }
 
     if(summarize) {
         # End goal: List of each type ([eta, eta_logsd, y]); rbinded across N
-        out <- do.call(.list_zip, list(pred_list, f = rbind))
+        out <- do.call(.list_zip, c(pred_list, f = rbind))
+        names(out) <- c("eta","eta_logsd","y")
         return(out)
     }
     # Else...
