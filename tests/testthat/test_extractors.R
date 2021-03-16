@@ -12,7 +12,7 @@ test_that("Object extractors work properly", {
     expect_equal(has_random_scale(fit_obs), FALSE)
     expect_equal(get_number_re(fit_obs), 4)
     expect_equal(get_re_indices(fit_obs), list(mu_random = 1:2, logsd_random = 3:4, mu_beta_random = NA, logsd_beta_random = NA))
-    expect_equal(has_multivariate(fit_lat), TRUE)
+    expect_equal(has_multivariate(fit_obs), TRUE)
 
     fit_lat <- lmmelsm(list(A ~ A_1 + A_2 + A_3,
                             B ~ N_1 + N_2 + N_3,
