@@ -73,6 +73,9 @@ nlist <- function(...) {
     inner <- gsub(rexInner, "\\1", cns)
 
     inds <- apply(do.call(rbind, strsplit(inner, ",")), 2, as.numeric)
+    if(is.null(dim(inds))) { # Edge case; only one set of indices
+        dim(inds) <- c(1,length(inds))
+    }
     inds_max <- apply(inds, 2, max)
     inds_all <- c(inds_max, S)
 
