@@ -19,3 +19,44 @@ test_that(".add_group_codings returns numerics and NAs.", {
         expect_equal(is.na(newdata[n, "subject"]), TRUE)
     }
 })
+
+
+test_that("predict.lmmelsm is returning correct structures", {
+    library(LMMELSM)
+    data(sim_data)
+
+    new_data <- sim_data[c(1,51,101),]
+
+    iter <- 5
+    cores <- 1
+    chains <- 1
+
+    fit_int <- lmmelsm(list(A ~ A_1 + A_2 + A_3 + A_4 + A_5 + A_6,
+                            N ~ N_1 + N_2 + N_3 + N_4 + N_5 + N_6
+                            ),
+                       subject, sim_data, iter = iter, cores = cores, chains = chains)
+    pred <- predict(fit_int, new_data)
+
+    expect_equal(length(pred), 3)
+    expect_equal(nrow(pred$eta), 3 * 2)
+    expect_equal(nrow(pred$eta_logsd), 3 * 2)
+    expect_equal(nrow(pred$y), 3 * 12)
+
+    fit_obs <- lmmelsm(list(observed ~ A_1 + N_1), subject, sim_data, iter = iter, cores = cores, chains = chains)
+
+    pred <- predict(fit_obs, new_data)
+
+    expect_equal(nrow(pred$eta), nrow(pred$y))
+    expect_equal(nrow(pred$eta), 3 * 2)
+    expect_equal(nrow(pred$eta_logsd), 3 * 2)
+    expect_equal(nrow(pred$y), 3 * 2)
+
+    fit_obs_1 <- lmmelsm(observed ~ A_1, subject, sim_data, iter = iter, cores = cores, chains = chains)
+
+    pred <- predict(fit_obs_1, new_data)
+
+    expect_equal(nrow(pred$eta), nrow(pred$y))
+    expect_equal(nrow(pred$eta), 3 * 1)
+    expect_equal(nrow(pred$eta_logsd), 3 * 1)
+    expect_equal(nrow(pred$y), 3 * 1)
+})
