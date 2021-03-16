@@ -59,4 +59,43 @@ test_that("predict.lmmelsm is returning correct structures", {
     expect_equal(nrow(pred$eta), 3 * 1)
     expect_equal(nrow(pred$eta_logsd), 3 * 1)
     expect_equal(nrow(pred$y), 3 * 1)
+
+    # Testing full gambit
+    fit_lat <- lmmelsm(list(A ~ A_1 + A_2 + A_3 + A_4 + A_5 + A_6,
+                            N ~ N_1 + N_2 + N_3 + N_4 + N_5 + N_6,
+                            location ~ x1 + x2 + baseline | x1 + x2,
+                            scale ~ x1 + x2 + baseline | x1 + x2,
+                            between ~ baseline),
+                       subject, sim_data, iter = iter, cores = cores, chains = chains)
+
+    pred <- predict(fit_lat, new_data)
+
+    expect_equal(length(pred), 3)
+    expect_equal(nrow(pred$eta), 3 * 2)
+    expect_equal(nrow(pred$eta_logsd), 3 * 2)
+    expect_equal(nrow(pred$y), 3 * 12)
+
+    pred <- predict(fit_lat, new_data, summarize = FALSE)
+    expect_equal(length(pred), 3)
+    expect_equal(length(pred[[1]]), 3)
+    expect_equal(ncol(pred[[1]][["eta"]]), 2)
+    expect_equal(ncol(pred[[1]][["eta_logsd"]]), 2)
+    expect_equal(ncol(pred[[1]][["y"]]), 12)
+})
+
+test_that("fitted returns correct structures", {
+    library(LMMELSM)
+    data(sim_data)
+
+    fit_lat <- lmmelsm(list(A ~ A_1 + A_2 + A_3 + A_4 + A_5 + A_6,
+                            N ~ N_1 + N_2 + N_3 + N_4 + N_5 + N_6,
+                            location ~ x1 + x2 + baseline | x1 + x2,
+                            scale ~ x1 + x2 + baseline | x1 + x2,
+                            between ~ baseline),
+                       subject, sim_data, iter = iter, cores = cores, chains = chains)
+
+    fitted_lat <- fitted(lmmelsm)
+    expect_that(length(fitted_lat), 2)
+    expect_that(nrow(fitted_lat[[1]]), nrow(sim_data) * 2)
+    expect_that(nrow(fitted_lat[[2]]), nrow(sim_data) * 2)
 })

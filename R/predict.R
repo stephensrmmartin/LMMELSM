@@ -295,6 +295,8 @@ predict.lmmelsm <- function(object, newdata = NULL, prob = .95, summarize = TRUE
 ##' @param ... Not used.
 ##' @return List of eta and eta_logsd. If summarize is \code{TRUE}, then the list contains formatted summary tables. If \code{FALSE}, then the list contains MCMC samples for all variables.
 ##' @author Stephen Martin
+##' @method fitted lmmelsm
+##' @export
 fitted.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
     pars <- c("eta", "eta_logsd")
     facVar <- ifelse(has_latent(object), "factor", "variable")
