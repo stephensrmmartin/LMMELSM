@@ -2,6 +2,7 @@
 
 S3method(coef,lmmelsm)
 S3method(loo,lmmelsm)
+S3method(predict,lmmelsm)
 S3method(print,lmmelsm)
 S3method(print,summary.lmmelsm)
 S3method(ranef,lmmelsm)

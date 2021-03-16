@@ -1,3 +1,18 @@
+##' Generates posterior predictions from fitted LMMELSM object.
+##'
+##' If the grouping variable is missing, or contains NAs, then new random effects are generated from the posterior random effect distribution.
+##' Where the grouping variables are not missing, the posterior standardized, orthogonalized random effects are obtained from the fitted model, and used as a basis for predicted random effects.
+##' Because the standardized, orthogonalized random effects are used, one can include different between-group variance values to predict new RE variances, and therefore a different random effect value.
+##' That is, the random effect, conditional on new between-group variance model covariates, is equal to: \deqn{u_i = z_i U D_i}, where \eqn{D_i} is the predicted between-group random effect SD, U is the upper cholesky factorization of the random effect correlations, and \eqn{z_i} is the standardized, orthogonalized random effect for group i.
+##' @title Predict method for lmmelsm objects.
+##' @param object lmmelsm object.
+##' @param newdata Data.frame (Default: NULL). If NULL, uses original data.frame.
+##' @inheritParams ranef.lmmelsm
+##' @param include_error Logical (Default: TRUE). If TRUE, then include stochastic realizations in outcome variables.
+##' @param ... Not used.
+##' @return List. If summarize is TRUE, then a list of outcome (eta, eta_logsd) and indicator (y) posterior predictive distribution summaries. If FALSE, an N-length list of lists of outcome and indicator MCMC samples.
+##' @author Stephen Martin
+##' @export
 predict.lmmelsm <- function(object, newdata = NULL, prob = .95, summarize = TRUE,  include_error = TRUE, ...) {
     x <- object
     include_error <- include_error
@@ -186,8 +201,11 @@ predict.lmmelsm <- function(object, newdata = NULL, prob = .95, summarize = TRUE
 
     if(summarize) {
         # End goal: List of each type ([eta, eta_logsd, y]); rbinded across N
+        out <- do.call(.list_zip, list(pred_list, f = rbind))
+        return(out)
     }
-
+    # Else...
+    pred_list
 }
 
 .lambda_matrix <- function(F, J, vec) {
