@@ -87,6 +87,10 @@ test_that("fitted returns correct structures", {
     library(LMMELSM)
     data(sim_data)
 
+    iter <- 5
+    cores <- 1
+    chains <- 1
+
     fit_lat <- lmmelsm(list(A ~ A_1 + A_2 + A_3 + A_4 + A_5 + A_6,
                             N ~ N_1 + N_2 + N_3 + N_4 + N_5 + N_6,
                             location ~ x1 + x2 + baseline | x1 + x2,
@@ -94,8 +98,8 @@ test_that("fitted returns correct structures", {
                             between ~ baseline),
                        subject, sim_data, iter = iter, cores = cores, chains = chains)
 
-    fitted_lat <- fitted(lmmelsm)
-    expect_that(length(fitted_lat), 2)
-    expect_that(nrow(fitted_lat[[1]]), nrow(sim_data) * 2)
-    expect_that(nrow(fitted_lat[[2]]), nrow(sim_data) * 2)
+    fitted_lat <- fitted(fit_lat)
+    expect_equal(length(fitted_lat), 2)
+    expect_equal(nrow(fitted_lat[[1]]), nrow(sim_data) * 2)
+    expect_equal(nrow(fitted_lat[[2]]), nrow(sim_data) * 2)
 })
