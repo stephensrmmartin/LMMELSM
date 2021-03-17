@@ -1,105 +1,56 @@
-######################
-# Univariate, no REs #
-######################
-
-set.seed(13)
-d <- LMMELSM:::simulate_lmmelsm(
-                   n = 50, K = 10,
-                   lambda = c(.7,.7,.7,.8,.9),
-                   resid = rep(1, 5),
-                   nu = rep(0, 5),
-                   mu_logsd_betas_cor = diag(1,2,2),
-                   mu_logsd_betas_sigma = rep(.3, 2),
-                   epsilon_cor = 1
-               )
-
-fit <- lmmelsm(list(
-    my_fact ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5
-), subject, data = d$df, iter = 200)
-
-summary(fit)
-ranef(fit)
-coef(fit)
-
-##############################
-# Univariate, Random effects #
-##############################
-
-library(dplyr)
 library(LMMELSM)
 
-set.seed(14)
-d <- LMMELSM:::simulate_lmmelsm(
-                   n = 50,
-                   K = 10,
-                   lambda = c(.7, .7, .7, .8, .9),
-                   resid = rep(1, 5),
-                   nu = rep(0, 5),
-                   mu_beta = matrix(c(.4, -.6), ncol = 1),
-                   logsd_beta = matrix(c(.4, -.6), ncol = 1),
-                   P_random_ind = c(1, 2),
-                   Q_random_ind = c(1, 2),
-                   mu_logsd_betas_cor = diag(1, 2 + 2 + 2),
-                   mu_logsd_betas_sigma = rep(.3, 2 + 2 + 2),
-                   epsilon_cor = matrix(1, 1, 1)
-               )
+data(sim_data)
 
-sOut <- lmmelsm(list(factor1 ~ obs_1 + obs_2 + obs_3 + obs_4 + obs_5, location ~ loc_1 + loc_2 | loc_1 + loc_2, scale ~ sca_1 + sca_2 | sca_1 + sca_2), subject, d$df, iter = 500)
+sub_n <- 20
 
-d$params$mu_logsd_betas_re[,1:2]
-ranef(sOut)$location[,"Mean", drop = FALSE]
+get_subsample_indices <- function(group, sub_n) {
+    indices <- seq_len(length(group))
 
-####################
-# Multivariate, RE #
-####################
+    indices_by_group <- tapply(indices, group, function(x) {
+        sample(x, sub_n)
+    })
 
-library(LMMELSM)
+    do.call(c, indices_by_group)
+}
 
 set.seed(13)
-n <- 50
-K <- 10
-F <- 2
-J <- 8
-lambda <- matrix(c(.8,.8,.8,.8,0,0,0,0,
-                    0,0,0,0,.8,.8,.8,.8),byrow=TRUE,nrow = F)
-resid <- rep(1, J)
-nu <- rep(0, J)
-mu_beta <- matrix(c(.4,.5,.6,.7), ncol = F)
-logsd_beta <- matrix(c(.4,.5,.6,.7), ncol = F)
-P_random_ind <- 1
-Q_random_ind <- 2
-mu_logsd_betas_cor <- diag(1, 2 * F + F + F)
-mu_logsd_betas_sigma <- rep(.3, 2 * F + F + F)
-epsilon_cor <- diag(1,2,2)
 
-d <- LMMELSM:::simulate_lmmelsm(
-        n = n,
-        K = K,
-        lambda = lambda,
-        resid = resid,
-        nu = nu,
-        mu_beta = mu_beta,
-        logsd_beta = logsd_beta,
-        P_random_ind = P_random_ind,
-        Q_random_ind = Q_random_ind,
-        mu_logsd_betas_cor = mu_logsd_betas_cor,
-        mu_logsd_betas_sigma = mu_logsd_betas_sigma,
-        epsilon_cor = epsilon_cor
-        )
+indices <- get_subsample_indices(sim_data$subject, sub_n)
+ds <- sim_data[indices, ]
 
-fit <- lmmelsm(list(fac1 ~ obs_1 + obs_2 + obs_3 + obs_4,
-                    fac2 ~ obs_5 + obs_6 + obs_7 + obs_8,
-                    location ~ loc_1 + loc_2 | loc_1,
-                    scale ~ sca_1 + sca_2 | sca_2),
-               group = subject, data = d$df, iter = 200)
+# Univariate #
 
-summary(fit)
+fit <- lmmelsm(list(A ~ A_1 + A_2 + A_3 + A_4 + A_5 + A_6), subject, ds, iter = 1000)
 
-ranefs <- ranef(fit)
-coefs <- coef(fit)
+# Univariate_observed #
+ds$A_mean <- rowMeans(ds[,paste0("A_",1:6)])
+fit_uni_obs <- lmmelsm(observed ~ A_mean, subject, ds, iter = 1000)
 
-ranefs$location_slope %>%
-    filter(subject == 1)
+# Multivariate_observed #
 
-coefs$location_slope %>%
-    filter(subject == 1)
+fit_multi_obs <- lmmelsm(observed ~ A_1 + A_2 + A_3 + A_4 + A_5 + A_6, subject, ds, iter = 1000)
+
+# Multivariate #
+
+fit_multi <- lmmelsm(list(A ~ A_1 + A_2 + A_3 + A_4 + A_5 + A_6,
+                          N ~ N_1 + N_2 + N_3 + N_4 + N_5 + N_6),
+                     subject, ds, iter = 1000)
+
+
+
+# True model #
+fit_true <- lmmelsm(list(A ~ A_1 + A_2 + A_3 + A_4 + A_5 + A_6,
+                         N ~ N_1 + N_2 + N_3 + N_4 + N_5 + N_6,
+                         location ~ x1 + baseline | x1,
+                         scale ~ x2 + baseline | x2,
+                         between ~ baseline),
+                    subject, ds, iter = 1000)
+
+
+# Predict #
+pred_fit_true <- predict(fit_true, include_error = FALSE)
+fit_true_fit_true <- fitted(fit_true)
+
+head(d$params$eta)
+head(d$params$eta[indices,])
