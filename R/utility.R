@@ -73,6 +73,9 @@ nlist <- function(...) {
     inner <- gsub(rexInner, "\\1", cns)
 
     inds <- apply(do.call(rbind, strsplit(inner, ",")), 2, as.numeric)
+    if(is.null(dim(inds))) { # Edge case; only one set of indices
+        dim(inds) <- c(1,length(inds))
+    }
     inds_max <- apply(inds, 2, max)
     inds_all <- c(inds_max, S)
 
@@ -80,7 +83,51 @@ nlist <- function(...) {
     return(arr)
 }
 
+# Turns [,,..., S] array into S-length list of [,,...]
+.array_to_list <- function(arr) {
+    dims <- dim(arr)
+    all_dims <- lapply(dims[-length(dims)], function(d){1:d})
+    S <- dims[length(dims)]
+
+    lst <- lapply(seq_len(S), function(s) {
+        args <- c(list(arr), all_dims, s, drop = FALSE)
+        do.call(`[`, args)
+    })
+
+    lst <- lapply(lst, function(s){
+        array(s, dims[-length(dims)])
+    })
+
+    lst
+}
+
+.extract_transform_to_list <- function(s, par = NULL) {
+    # Get as array[,,...,S]
+    arr <- .extract_transform(s, par)
+    lst <- .array_to_list(arr)
+
+    lst
+}
+
 .ones <- function(x) {
     out <- matrix(1, x, 1)
     return(out)
+}
+##' @title Zip two lists together with function.
+##' @param f Function
+##' @param ... Lists to zip.
+##' @return List.
+##' @author Stephen Martin
+##' @keywords internal
+.list_zip <- function(..., f = cbind) {
+    dots <- list(...)
+    lengths <- lapply(dots, length)
+    ## stopifnot(all.equal(lengths))
+
+    lapply(seq_len(lengths[[1]]), function(i) {
+        items <- lapply(dots, function(l) {
+            l[[i]]
+        })
+        do.call(f, items)
+    })
 }

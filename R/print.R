@@ -99,7 +99,7 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     out$meta$stan$elapsed <- rstan::get_elapsed_time(object$fit)
     out$meta$stan$diag <- .get_diagnostics(object)
 
-    latent <- object$meta$latent
+    latent <- has_latent(object)
     if(latent) {
         # Measurement model.
         out$summary[c("lambda", "sigma", "nu")] <- .summary_measurement(object, prob)
@@ -153,8 +153,8 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 
 .summary_measurement <- function(x, prob) {
     # Meta-data
-    fnames <- unlist(x$meta$indicator_spec$fname)
-    ind_names <- x$meta$indicator_spec$mname
+    fnames <- get_factor_names(x)
+    ind_names <- get_indicator_names(x)
 
     # Summarize
     lambda <- .summarize(x, pars = "lambda", prob = prob)
@@ -177,7 +177,7 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 
 .summary_observed <- function(x, prob) {
     # Meta-data
-    ind_names <- x$meta$indicator_spec$mname
+    ind_names <- get_indicator_names(x)
 
     # Summarize
     sigma <- .summarize(x, pars = "sigma", prob = prob)
@@ -198,17 +198,19 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 .summary_ranef <- function(x, prob) {
     # Meta-data
     pnames <- x$meta$pred_spec$pname
-    fnames <- unlist(x$meta$indicator_spec$fname)
-    F <- x$meta$indicator_spec$F
-    P_random <- x$meta$pred_spec$P_random
-    Q_random <- x$meta$pred_spec$Q_random
-    P_random_ind <- x$meta$pred_spec$P_random_ind
-    Q_random_ind <- x$meta$pred_spec$Q_random_ind
+    fnames <- get_factor_names(x)
+    F <- get_F(x)
+    P_random <- get_P_random(x)
+    Q_random <- get_Q_random(x)
+    P_random_ind <- get_P_random_ind(x)
+    Q_random_ind <- get_Q_random_ind(x)
 
     # Build RE names
-    re_total <- 2 * F + F*P_random + F*Q_random
+    re_total <- get_number_re(x)
     re_names <- .build_re_names(x$meta)
-    re_int_names <- re_names[1:(2 * F)]
+    re_indices <- get_re_indices(x)
+    re_int_names <- re_names[unlist(re_indices[c("mu_random","logsd_random")])]
+    ## re_int_names <- re_names[1:(2 * F)]
     re_slope_names <- re_names[(2 * F + 1):re_total]
 
     ###############
@@ -250,13 +252,13 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 
     mu_beta_random <- logsd_beta_random <- NA
 
-    if(P_random > 0) {
+    if(has_random_location(x)) {
         mu_beta_random <- .summarize(x, pars = "mu_beta_random", prob = prob)
         mu_beta_random <- .tidy_summary(mu_beta_random, c(gs$name, "predictor", "factor"), gs$map$label, pnames$location[P_random_ind], fnames)
         mu_beta_random <- .summary_rearrange(mu_beta_random, c(gs$name, "factor", "predictor"))
     }
 
-    if(Q_random > 0) {
+    if(has_random_scale(x)) {
         logsd_beta_random <- .summarize(x, pars = "logsd_beta_random", prob = prob)
         logsd_beta_random <- .tidy_summary(logsd_beta_random, c(gs$name, "predictor", "factor"), gs$map$label, pnames$scale[Q_random_ind], fnames)
         logsd_beta_random <- .summary_rearrange(logsd_beta_random, c(gs$name, "factor", "predictor"))
@@ -276,22 +278,21 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
     # Meta-data
     PS <- x$meta$pred_spec
     pnames <- PS$pname
-    fnames <- unlist(x$meta$indicator_spec$fname)
+    fnames <- get_factor_names(x)
 
     mu_beta <- NA
     logsd_beta <- NA
 
-    if(PS$P > 0) {
+    if(has_location(x)) {
         mu_beta <- .summarize(x, pars = "mu_beta", prob = prob)
-        mu_beta <- .tidy_summary(mu_beta, c("predictor", "factor"), pnames$location, fnames)
+        mu_beta <- .tidy_summary(mu_beta, c("predictor", "factor"), get_predictor_names(x, "location"), fnames)
         mu_beta <- .summary_rearrange(mu_beta, c("factor", "predictor"))
     }
 
-    if(PS$Q > 0) {
+    if(has_scale(x)) {
         logsd_beta <- .summarize(x, pars = "logsd_beta", prob = prob)
-        logsd_beta <- .tidy_summary(logsd_beta, c("predictor", "factor"), pnames$scale, fnames)
+        logsd_beta <- .tidy_summary(logsd_beta, c("predictor", "factor"), get_predictor_names(x, "scale"), fnames)
         logsd_beta <- .summary_rearrange(logsd_beta, c("factor", "predictor"))
-        
     }
 
     out <- nlist(mu_beta, logsd_beta)
@@ -300,20 +301,18 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 
 .summary_between <- function(x, prob) {
     # Meta-data
-    PS <- x$meta$pred_spec
-    pnames <- PS$pname$between
-    fnames <- unlist(x$meta$indicator_spec$fname)
-    F <- x$meta$indicator_spec$F
+    fnames <- get_factor_names(x)
+    F <- get_F(x)
     re_int_names <- paste0(fnames, "MAGICSEP", rep(c("mu", "logsd"), each = F))
 
     zeta <- NA
-    if(PS$R > 0) {
+    if(has_between(x)) {
 
         # Summarize
         zeta <- .summarize(x, pars = "zeta", prob = prob)
 
         # Tidy
-        zeta <- .tidy_summary(zeta, c("predictor", "param"), pnames, re_int_names)
+        zeta <- .tidy_summary(zeta, c("predictor", "param"), get_predictor_names(x, "between"), re_int_names)
 
         # Separate
         zeta[, c("factor", "param")] <- .magicsep(zeta[, "param"], c("factor", "param"))
@@ -328,8 +327,8 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 
 .summary_epsilon <- function(x, prob) {
     # Meta-data
-    fnames <- unlist(x$meta$indicator_spec$fname)
-    F <- x$meta$indicator_spec$F
+    fnames <- get_factor_names(x)
+    F <- get_F(x)
 
     # Summarize
     o <- .summarize(x, pars = "Omega_eta", prob = prob)
@@ -352,7 +351,7 @@ summary.lmmelsm <- function(object, prob = .95, ...) {
 print.summary.lmmelsm <- function(x, ...) {
     dots <- list(...)
     digits <- dots$digits %IfNull% x$meta$digits
-    latent <- x$meta$latent
+    latent <- has_latent(x)
     facVarStr <- ifelse(latent, "Factor", "Variable") # To avoid some ifelses down the line
 
     # Diagnostics
@@ -396,7 +395,7 @@ print.summary.lmmelsm <- function(x, ...) {
     }
     
     # Factor Cors
-    if(IS$F > 1) {
+    if(has_multivariate(x)) {
         .newline()
         cat(facVarStr, "correlations")
         .newline()
@@ -411,7 +410,7 @@ print.summary.lmmelsm <- function(x, ...) {
         .newline()
         with(x$summary, .print_table(nu, digits))
     }
-    if(x$meta$pred_spec$P > 0) {
+    if(has_location(x)) {
         PS <- x$meta$pred_spec
         .sep()
         cat("Location model (Fixed effects)")
@@ -434,7 +433,7 @@ print.summary.lmmelsm <- function(x, ...) {
         .newline()
         with(x$summary, .print_table(sigma, digits))
     }
-    if(x$meta$pred_spec$Q > 0) {
+    if(has_scale(x)) {
         PS <- x$meta$pred_spec
         .sep()
         cat("Scale model (Fixed effects)")
@@ -450,7 +449,7 @@ print.summary.lmmelsm <- function(x, ...) {
     }
 
     # Between model
-    if(x$meta$pred_spec$R > 0) {
+    if(has_between(x)) {
         PS <- x$meta$pred_spec
         .sep()
         cat("Between-group scale model")
@@ -468,7 +467,7 @@ print.summary.lmmelsm <- function(x, ...) {
     # RE SDs
     .sep()
     cat("Random effect standard deviations")
-    if(x$meta$pred_spec$R > 0) {
+    if(has_between(x)) {
         .newline()
         .tab()
         cat("Note: Between-group scale model used.")
@@ -492,7 +491,7 @@ print.summary.lmmelsm <- function(x, ...) {
 
     cms <- x$summary$random_correlation
 
-    re_total <- with(x$meta, indicator_spec$F*2 + pred_spec$P_random*indicator_spec$F + pred_spec$Q_random*indicator_spec$F)
+    re_total <- get_number_re(x)
 
     re_names <- .build_re_names(x$meta, sep = "_")
     

@@ -17,20 +17,6 @@
 ranef.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
     x <- object
 
-    IS <- x$meta$indicator_spec
-    PS <- x$meta$pred_spec
-    GS <- x$meta$group_spec
-
-    # Meta-data
-    pnames <- PS$pname
-    fnames <- unlist(IS$fname)
-    F <- IS$F
-    P_random <- PS$P_random
-    Q_random <- PS$Q_random
-    P_random_ind <- PS$P_random_ind
-    Q_random_ind <- PS$Q_random_ind
-    re_total <- 2 * F + F * P_random + F * Q_random
-
     if(summarize) {
         out <- summary(x, prob = prob)$summary[c("random_mu_intercept",
                                                  "random_logsd_intercept",
@@ -44,10 +30,10 @@ ranef.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
 
     mu_beta_random <- logsd_beta_random <- NA
 
-    if(P_random > 0) {
+    if(has_random_location(x)) {
         mu_beta_random <- as.matrix(x$fit, pars = "mu_beta_random")
     }
-    if(Q_random > 0) {
+    if(has_random_scale(x)) {
         logsd_beta_random <- as.matrix(x$fit, pars = "logsd_beta_random")
     }
 
@@ -84,14 +70,15 @@ coef.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
 
     # Meta-data
     pnames <- PS$pname
-    fnames <- unlist(IS$fname)
-    F <- IS$F
+    fnames <- get_factor_names(x)
+    K <- get_K(x)
+    F <- get_F(x)
     P_random <- PS$P_random
     Q_random <- PS$Q_random
-    P_random_ind <- PS$P_random_ind
-    Q_random_ind <- PS$Q_random_ind
-    re_total <- 2 * F + F * P_random + F * Q_random
-    latent <- x$meta$latent
+    P_random_ind <- get_P_random_ind(x)
+    Q_random_ind <- get_Q_random_ind(x)
+    re_total <- get_number_re(x)
+    latent <- has_latent(x)
 
     # Get samples
     ## Fixed effects
@@ -100,19 +87,19 @@ coef.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
     mu_coef <- as.matrix(x$fit, pars = "mu_random")
     logsd_coef <- as.matrix(x$fit, pars = "logsd_random")
     if(!latent) {
-        S <- nrow(mu_coef)
+        S <- get_S(x)
         nu <- as.matrix(x$fit, pars = "nu")
         sigma <- as.matrix(x$fit, pars = "sigma") # sigma = log_sigma
-        rep_cols <- rep(1:F, each = GS$K) # F=J=number of nu/sigma
+        rep_cols <- rep(1:F, each = get_K(x)) # F=J=number of nu/sigma
         mu_coef <- mu_coef + nu[, rep_cols]
         logsd_coef <- logsd_coef + sigma[, rep_cols]
     }
     
 
-    S <- nrow(mu_coef) # samples
+    S <- get_S(x) # samples
 
     mu_beta_coef <- logsd_beta_coef <- NA
-    if(P_random > 0) { # Random location coefficients
+    if(has_random_location(x)) { # Random location coefficients
         mu_fixed_inds <- as.matrix(expand.grid(P_random_ind, 1:F))
         mu_fixed_inds <- paste0("[",mu_fixed_inds[,1],",",mu_fixed_inds[,2],"]")
 
@@ -123,26 +110,26 @@ coef.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
 
         ## Restructure for vectorized addition
         ### As array
-        mu_beta_random_arr <- array(mu_beta_random, dim = c(S, GS$K, P_random, F))
+        mu_beta_random_arr <- array(mu_beta_random, dim = c(S, K, P_random, F))
 
         ### Reorder to be [Samples, predictor, factor, group]
         mu_beta_coef <- aperm(mu_beta_random_arr, c(1, 3, 4, 2))
 
         ### Add to this a recycled fixed effect array
-        mu_beta_coef <- mu_beta_coef + array(mu_beta, c(S, P_random, F, GS$K))
+        mu_beta_coef <- mu_beta_coef + array(mu_beta, c(S, P_random, F, K))
 
         ### Repermute to be more like ranef order (Column major)
         mu_beta_coef <- aperm(mu_beta_coef, c(1, 4, 2, 3))
 
         ### Wind it back down to be [S, Coefs] to pass to .summarize, or to return.
-        mu_beta_coef <- array(mu_beta_coef, c(S, P_random*F*GS$K))
+        mu_beta_coef <- array(mu_beta_coef, c(S, P_random*F*K))
 
         ## Regenerate matrix labels
-        col_renames_mu <- expand.grid(1:GS$K, P_random_ind, 1:F)
+        col_renames_mu <- expand.grid(1:K, P_random_ind, 1:F)
         colnames(mu_beta_coef) <- paste0("mu_beta[", col_renames_mu[,1], ",", col_renames_mu[,2], ",", col_renames_mu[,3], "]")
     }
 
-    if(Q_random > 0) { # Random scale coefficients
+    if(has_random_scale(x)) { # Random scale coefficients
         logsd_fixed_inds <- as.matrix(expand.grid(Q_random_ind, 1:F))
         logsd_fixed_inds <- paste0("[",logsd_fixed_inds[,1],",",logsd_fixed_inds[,2],"]")
 
@@ -153,22 +140,22 @@ coef.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
 
         ## Restructure for vectorized addition
         ### As array
-        logsd_beta_random_arr <- array(logsd_beta_random, dim = c(S, GS$K, Q_random, F))
+        logsd_beta_random_arr <- array(logsd_beta_random, dim = c(S, K, Q_random, F))
 
         ### Reorder to be [Samples, predictor, factor, group]
         logsd_beta_coef <- aperm(logsd_beta_random_arr, c(1, 3, 4, 2))
 
         ### Add to this a recycled fixed effect array
-        logsd_beta_coef <- logsd_beta_coef + array(logsd_beta, c(S, Q_random, F, GS$K))
+        logsd_beta_coef <- logsd_beta_coef + array(logsd_beta, c(S, Q_random, F, K))
 
         ### Repermute to be more like ranef order (Column major)
         logsd_beta_coef <- aperm(logsd_beta_coef, c(1, 4, 2, 3))
 
         ### Wind it back down to be [S, Coefs] to pass to .summarize, or to return.
-        logsd_beta_coef <- array(logsd_beta_coef, c(S, Q_random*F*GS$K))
+        logsd_beta_coef <- array(logsd_beta_coef, c(S, Q_random*F*K))
 
         ## Regenerate matrix labels
-        col_renames_logsd <- expand.grid(1:GS$K, Q_random_ind, 1:F)
+        col_renames_logsd <- expand.grid(1:K, Q_random_ind, 1:F)
         colnames(logsd_beta_coef) <- paste0("logsd_beta[", col_renames_logsd[,1], ",", col_renames_logsd[,2], ",", col_renames_logsd[,3], "]")
     }
 
@@ -181,11 +168,11 @@ coef.lmmelsm <- function(object, prob = .95, summarize = TRUE, ...) {
 
         logsd_coef <- .summarize(logsd_coef, NULL, prob = prob)
         logsd_coef <- .tidy_summary(logsd_coef, c(GS$name, "factor"), GS$map$label, fnames)
-        if(P_random > 0) {
+        if(has_random_location(x)) {
             mu_beta_coef <- .summarize(mu_beta_coef, NULL, prob = prob)
             mu_beta_coef <- .tidy_summary(mu_beta_coef, c(GS$name, "predictor", "factor"), GS$map$label, pnames$location, fnames)
         }
-        if(Q_random > 0) {
+        if(has_random_scale(x)) {
             logsd_beta_coef <- .summarize(logsd_beta_coef, NULL, prob = prob)
             logsd_beta_coef <- .tidy_summary(logsd_beta_coef, c(GS$name, "predictor", "factor"), GS$map$label, pnames$scale, fnames)
         }
