@@ -7,7 +7,7 @@
 lmmelsm(formula, group, data, ...)
 }
 \arguments{
-\item{formula}{Formula or list of formulas. LHS of each should be factor name, RHS should be indicators.}
+\item{formula}{Formula or list of formulas. See section on model specification.}
 
 \item{group}{Raw grouping variable name (not character).}
 
@@ -91,7 +91,7 @@ It is assumed that any formula with \code{location}, \code{scale}, or \code{betw
 }
 
 \examples{
-\dontrun{
+\donttest{
 data(sim_data)
 
 # Fit LMMELSM with two latent factors (A and B),
@@ -103,7 +103,7 @@ fit <- lmmelsm(list(A ~ A_1 + A_2 + A_3 + A_4 + A_5 + A_6,
                     location ~ x1 + baseline | x1,
                     scale ~ x2 + baseline | x2,
                     between ~ baseline),
-               subject, sim_data
+               subject, sim_data, cores = 2
               )
 
 # Summarize fit
