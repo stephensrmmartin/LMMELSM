@@ -2,7 +2,7 @@
 % Please edit documentation in R/latentMelsm.R
 \name{lmmelsm}
 \alias{lmmelsm}
-\title{Fit two-level latent MELSM.}
+\title{Specify and fit the (latent) (multivariate) melsm.}
 \usage{
 lmmelsm(formula, group, data, ...)
 }
@@ -19,14 +19,11 @@ lmmelsm(formula, group, data, ...)
 lmmelsm object.
 }
 \description{
-Fits a MELSM on latent variables.
-}
-\details{
-Currently supports multiple endogenous latent factors  and exogenous observed variables.
+Fits a mixed effects location scale model on one or more observed or latent variables.
+Currently supports multiple endogenous latent factors or observed outcomes,  and exogenous observed variables.
 Data are assumed to be two-level data. I.e., multiple indicators, repeatedly measured within group.
-Currently assumes measurement invariance (i.e., the measurement model params are equivalent across groups).
-Excludes rows with missing data.
-The Stan model currently uses the unit-variance identification.
+Currently assumes measurement invariance (i.e., the measurement model params are equivalent across groups) and a unit-variance identification for latent variables.
+Excludes rows with missing data (and warns the user).
 }
 \section{Model specification}{
 
@@ -79,7 +76,7 @@ The between-group scale model is responsible for modeling the random effect stan
 
 specifies a between-group scale model on the SDs of the location and scale intercepts for each factor.
 
-If you want to fit a non-latent multivariate MELSM, you can now do so using new formula syntax:
+If you want to fit a non-latent multivariate MELSM, use "observed" as the LHS:
 
 For example, if y1, y2, and y3 are three observed outcome variables, then
 
@@ -87,12 +84,39 @@ For example, if y1, y2, and y3 are three observed outcome variables, then
 
 would fit an M-MELSM.
 Location, scale, and between-group models can still be specified, but they will model the observed variables, rather than latent variables.
-You cannot currently have both observed and latent variables in the same model.
+You cannot currently have both observed and latent outcomes in the same model.
 
 \emph{Note}: Because \code{location}, \code{scale}, \code{between}, and \code{observed} represent special formulas, latent factors cannot be named location, scale, between, nor observed.
 It is assumed that any formula with \code{location}, \code{scale}, or \code{between} on the left-hand side (LHS) is a predictive formula, not a latent variable specification.
 }
 
+\examples{
+\dontrun{
+data(sim_data)
+
+# Fit LMMELSM with two latent factors (A and B),
+# Location model with one random coefficient
+# Scale model with one random coefficient
+# Between-group scale model with one covariate
+fit <- lmmelsm(list(A ~ A_1 + A_2 + A_3 + A_4 + A_5 + A_6,
+                    B ~ N_1 + N_2 + N_3 + N_4 + N_5 + N_6,
+                    location ~ x1 + baseline | x1,
+                    scale ~ x2 + baseline | x2,
+                    between ~ baseline),
+               subject, sim_data
+              )
+
+# Summarize fit
+summary(fit)
+
+# Get random effects
+ranef(fit)
+# Get group-specific parameter values
+coef(fit)
+# Get approximate leave-one-out
+loo(fit)
+}
+}
 \author{
 Stephen R. Martin
 }

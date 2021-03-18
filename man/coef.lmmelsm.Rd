@@ -3,7 +3,7 @@
 \name{coef.lmmelsm}
 \alias{coef.lmmelsm}
 \alias{coef}
-\title{Extract random coefficients for each group.}
+\title{Extract group-specific coefficients.}
 \usage{
 \method{coef}{lmmelsm}(object, prob = 0.95, summarize = TRUE, ...)
 }

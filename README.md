@@ -17,7 +17,7 @@ Instead of predicting the expected values and variances of observed or computed 
 Assuming an adequate measurement model, the LMMELSM therefore models the variance of a reduced-error score.
 
 LMMELSM is therefore useful for modeling conditional and group-specific latent means and variances.
-One such example is modeling the intraindividual variability of latent scores of a persons over time in an experience sampling methodology over time.
+One such example is modeling the intraindividual variability of latent scores of a persons over time in an experience sampling methodology.
 Another example is modeling the heterogeneity of individuals' latent means from person-level covariates.
 
 LMMELSM currently supports:
@@ -38,8 +38,7 @@ remotes::install_github("stephensrmmartin/LMMELSM")
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
-
+In this example, increasingly complex MELSMs are modeled, and demonstrate the simple formula syntax.
 ``` r
 library(LMMELSM)
 
@@ -67,6 +66,15 @@ fit <- lmmelsm(list(Agreeableness ~ A_1 + A_2 + A_3 + A_4 + A_5 + A_6,
                     scale ~ x2 + baseline | x2,
                     between ~ baseline),
                subject, sim_data)
+
+# Time-varying predictors, person-level predictors on location, scale, and between-group variance
+fit <- lmmelsm(list(Agreeableness ~ A_1 + A_2 + A_3 + A_4 + A_5 + A_6,
+                    Neuroticism ~ N_1 + N_2 + N_3 + N_4 + N_5 + N_6,
+                    location ~ x1 + baseline | x1,
+                    scale ~ x1 + x2 + baseline | x1 + x2,
+                    between ~ baseline),
+               subject, sim_data)
+
 
 # Non-latent Multivariate MELSM
 fit <- lmmelsm(list(observed ~ A_1 + N_1,

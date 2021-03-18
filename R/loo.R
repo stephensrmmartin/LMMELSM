@@ -56,8 +56,8 @@ loo.lmmelsm <- function(x, type = c("observation", "group"), ...) {
 }
 
 .log_liks <- function(x) {
-    J <- x$meta$indicator_spec$J
-    N <- x$meta$indicator_spec$N
+    J <- get_J(x)
+    N <- get_N(x)
     y <- x$stan_data$y
     # Extract and transform param samples.
     etas <- .extract_transform(x$fit, par = "eta")
