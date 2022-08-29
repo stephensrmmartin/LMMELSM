@@ -6,7 +6,7 @@
 \alias{LMMELSM}
 \title{The 'LMMELSM' package.}
 \description{
-A DESCRIPTION OF THE PACKAGE
+Fits latent (or observed) multivariate (or univariate) mixed effects location scale models.
 }
 \references{
 Stan Development Team (2020). RStan: the R interface to Stan. R package version 2.19.3. https://mc-stan.org

@@ -1,6 +1,6 @@
 #' The 'LMMELSM' package.
 #'
-#' @description A DESCRIPTION OF THE PACKAGE
+#' @description Fits latent (or observed) multivariate (or univariate) mixed effects location scale models.
 #'
 #' @docType package
 #' @name LMMELSM-package

@@ -17,25 +17,27 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.1
 Biarch: true
 BugReports: https://github.com/stephenSRMMartin/LMMELSM
 Depends: 
     R (>= 3.4.0)
 Imports: 
-    methods,
-    Rcpp (>= 0.12.0),
-    rstan (>= 2.18.1),
-    rstantools (>= 2.0.0),
-    parallel (>= 3.6.0),
-    nlme (>= 3.0),
     Formula (>= 1.2),
+    loo (>= 2.3.0),
     MASS (>= 7.0),
-    loo (>= 2.3.0)
+    methods,
+    nlme (>= 3.0),
+    parallel (>= 3.6.0),
+    Rcpp (>= 0.12.0),
+    RcppParallel (>= 5.0.1),
+    rstan (>= 2.18.1),
+    rstantools (>= 2.2.0)
 LinkingTo: 
     BH (>= 1.66.0),
     Rcpp (>= 0.12.0),
     RcppEigen (>= 0.3.3.3.0),
+    RcppParallel (>= 5.0.1),
     rstan (>= 2.18.1),
     StanHeaders (>= 2.18.0)
 SystemRequirements: GNU make
