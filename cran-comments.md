@@ -1,7 +1,4 @@
-* This is a resubmission of a new package.
+* This is an update from 0.1.0 to 0.2.0
 
-- Changed dontrun to donttest. The model takes longer than 5 seconds, therefore is excluded from testing.
-- Tests are implemented instead.
-- Improved description. As per the style guide, the description no longer begins with the package name or title.
-- Added citations. The latent variant is not yet published, but two papers are available for the other functionality.
-- Cores reduced to 2 in the example.
+- Fixes the compilation error (clang-UBSAN)
+- Added predict and fitted methods for lmmelsm objects
