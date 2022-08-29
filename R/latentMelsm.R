@@ -92,7 +92,7 @@
 ##'                     location ~ x1 + baseline | x1,
 ##'                     scale ~ x2 + baseline | x2,
 ##'                     between ~ baseline),
-##'                subject, sim_data, cores = 2
+##'                subject, sim_data, cores = 2, iter = 500, chains = 2
 ##'               )
 ##'
 ##' # Summarize fit
