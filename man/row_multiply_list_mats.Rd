@@ -12,7 +12,7 @@ row_multiply_list_mats(r, mats)
 \item{mats}{}
 }
 \value{
-List of \code{row \%*\% mats\link{l}}
+List of row by matrix products.
 }
 \description{
 Multiply a row by a list of matrices

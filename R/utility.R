@@ -62,7 +62,7 @@ nlist <- function(...) {
 }
 
 .extract_transform <- function(s, par = NULL) {
-    if(!is.matrix(s) & class(s) == "stanfit") {
+    if(!is.matrix(s) & inherits(s, 'stanfit')) {
         s <- as.matrix(s, pars = par)
     }
     cns <- colnames(s)
