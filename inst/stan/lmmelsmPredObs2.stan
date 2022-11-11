@@ -78,7 +78,12 @@ functions {
   matrix l1_to_l2(matrix l1, array[] int indices) {
     int K = size(indices);
     int n_col = cols(l1);
-    matrix[K, n_col] l2 = l1[indices];
+    matrix[K, n_col] l2;
+    for(k in 1:K) {
+      for(c in 1:n_col) {
+	l2[k, c] = l1[k, c];
+      }
+    }
     return(l2);
   }
 
@@ -112,8 +117,23 @@ functions {
     int K = rows(mat);
     array[K] matrix[R, C] out;
 
-    for(k in 1:K) {
-      out[k] = to_matrix(mat[k], R, C);
+    // UBSAN error fix requires unrolling this loop. cf https://discourse.mc-stan.org/t/cran-problem-lmmelsm-hitting-clang-ubsan-errors/28812/3
+    /* for(k in 1:K) { */
+    /*   out[k] = to_matrix(mat[k], R, C); */
+    /* } */
+    int M = cols(mat);
+    for(k in 1:K){
+      int r = 1;
+      int c = 1;
+      for(m in 1:M) {
+	out[k, r, c] = mat[k, m];
+	if(r == R) {
+	  r = 1;
+	  c += 1;
+	} else {
+	  r += 1;
+	}
+      }
     }
 
     return(out);
