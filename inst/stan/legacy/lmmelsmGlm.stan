@@ -7,7 +7,7 @@ Sigma_eta[k_i] = L * SD[k_i] * SD[k_i]' * L'
 log(SD[k_i]) ~ N(0, ??)
  */ 
 functions {
-  matrix lambda_mat(int J, int F, int[] J_f, int[,] F_ind, vector lambda_est) {
+  matrix lambda_mat(int J, int F, array[] int J_f, array[,] int F_ind, vector lambda_est) {
     matrix[F, J] out = rep_matrix(0.0, F, J);
     int count = 1;
     for(f in 1:F) {
@@ -28,11 +28,11 @@ data {
   int F; // Number of latent factors
   int K; // Number of grouping variables
 
-  int group[N]; // Grouping indicator.
+  array[N] int group; // Grouping indicator.
 
   // Indicators
-  int J_f[F]; // Number of indicators for each factor.
-  int F_ind[F,J]; // Indicator indices.
+  array[F] int J_f; // Number of indicators for each factor.
+  array[F,J] int F_ind; // Indicator indices.
   matrix[N, J] x;
 
 }
@@ -63,7 +63,7 @@ transformed parameters {
   matrix[K, F] eta_mean = eta_mean_logsd[,1:F];
   matrix[K, F] eta_sd = exp(eta_mean_logsd[,(F+1) : (F*2)]);
   matrix[N, F] eta = eta_mean[group,];
-  matrix[F,F] U_group_eta[K]; // Will be Upper (transposed) Cholesky covariance
+  array[K] matrix[F,F] U_group_eta; // Will be Upper (transposed) Cholesky covariance
   for(k in 1:K){
     U_group_eta[k] = (diag_pre_multiply(eta_sd[k], L_eta_random))';
   }
