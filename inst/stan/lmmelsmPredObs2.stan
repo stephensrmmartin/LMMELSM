@@ -1,7 +1,7 @@
 functions {
 
   // Takes indicator spec and lambda_est, unrolls into lambda matrix.
-  matrix lambda_mat(int J, int F, int[] J_f, int[,] F_ind, vector lambda_est) {
+  matrix lambda_mat(int J, int F, array[] int J_f, array[,] int F_ind, vector lambda_est) {
     matrix[F, J] out = rep_matrix(0.0, F, J);
     int count = 1;
     for(f in 1:F) {
@@ -75,7 +75,7 @@ functions {
     Convert repeated measures to subject-level dataset
     @return matrix[K, cols(l1)]; in order of 1:K, if using l1_to_l2_indices().
    */
-  matrix l1_to_l2(matrix l1, int[] indices) {
+  matrix l1_to_l2(matrix l1, array[] int indices) {
     int K = size(indices);
     int n_col = cols(l1);
     matrix[K, n_col] l2 = l1[indices];
@@ -83,14 +83,14 @@ functions {
   }
 
   /*
-    Find indices for which each group, k in 1:K, first appears in int[] group.
+    Find indices for which each group, k in 1:K, first appears in array[] int group.
     @param int K: Total number of groups.
-    @param int[] group: Array of group integers from L1 dataset.
-    @return int[K]; Array of L1 indices in which each k first appears.
+    @param array[] int group: Array of group integers from L1 dataset.
+    @return array[K] int; Array of L1 indices in which each k first appears.
    */
-  int[] l1_to_l2_indices(int K, int[] group) {
+  array[] int l1_to_l2_indices(int K, array[] int group) {
     int N = size(group);
-    int where_l1_first_k[K] = rep_array(0, K);
+    array[K] int where_l1_first_k = rep_array(0, K);
 
     for(n in 1:N) {
       if(where_l1_first_k[group[n]] == 0) {
@@ -106,11 +106,11 @@ functions {
     @param int R: Rows in output matrices.
     @param int C: Columns in output matrices.
     @param matrix mat: KxM Matrix to restructure.
-    @return matrix[]: Array of RxC matrices.
+    @return array[] matrix: Array of RxC matrices.
    */
-  matrix[] mat_to_mat_array(int R, int C, matrix mat) {
+  array[] matrix mat_to_mat_array(int R, int C, matrix mat) {
     int K = rows(mat);
-    matrix[R, C] out[K];
+    array[K] matrix[R, C] out;
 
     for(k in 1:K) {
       out[k] = to_matrix(mat[k], R, C);
@@ -124,11 +124,11 @@ functions {
     Conceptually, same as 'from:to' in R; but Stan does not have this.
     @param int from
     @param int to
-    @return int[]: Array of integers in sequence defined by from, to; inclusive.
+    @return array[] int: Array of integers in sequence defined by from, to; inclusive.
    */
-  int[] seq_from_to(int from, int to) {
+  array[] int seq_from_to(int from, int to) {
     int length = to - from + 1;
-    int out[length];
+    array[length] int out;
     for(i in 1:length) {
       out[i] = from + i - 1;
     }
@@ -148,17 +148,17 @@ data {
   int R; // Number of predictors (between-logsd); Fixed effects only (inherently a level-2 question)
   int P_random; // Number of random location coefficients
   int Q_random; // Number of random scale coefficients
-  int P_random_ind[P_random]; // Indices in x_loc corresponding to random location predictors
-  int Q_random_ind[Q_random]; // Indices in x_loc corresponding to random scale predictors
+  array[P_random] int P_random_ind; // Indices in x_loc corresponding to random location predictors
+  array[Q_random] int Q_random_ind; // Indices in x_loc corresponding to random scale predictors
 
-  int group[N]; // Grouping indicator
+  array[N] int group; // Grouping indicator
   matrix[N, P] x_loc; // Location predictors
   matrix[N, Q] x_sca; // Scale predictors
   matrix[N, R] x_bet; // Between predictors
 
   // Indicators
-  int J_f[F]; // Number of indicators for each factor
-  int F_ind[F, J]; // Indicator indices.
+  array[F] int J_f; // Number of indicators for each factor
+  array[F, J] int F_ind; // Indicator indices.
   matrix[N, J] y; // Indicator data.
 
   // Options
@@ -170,7 +170,7 @@ data {
 transformed data {
   int intercept_only = P == 0 && Q == 0; // Whether intercept-only; allows quicker computations
   int lambda_total = sum(J_f);
-  int l1_indices[K] = l1_to_l2_indices(K, group);
+  array[K] int l1_indices = l1_to_l2_indices(K, group);
   // Level 2 datasets, for ReVar and efficiency.
   matrix[K, P] x_loc_l2;
   matrix[K, Q] x_sca_l2;
@@ -181,10 +181,10 @@ transformed data {
   int re_logsd_betas = Q_random*F;
   int re_total = re_intercepts + re_mu_betas + re_logsd_betas;
   // Pre-compute RE matrix indices
-  int re_ind_mu[F] = seq_from_to(1, F);
-  int re_ind_logsd[F] = seq_from_to(F + 1, F*2);
-  int re_ind_mu_betas[re_mu_betas] = seq_from_to((F*2) + 1, (F*2) + P_random*F);
-  int re_ind_logsd_betas[re_logsd_betas] = seq_from_to(F*2 + P_random*F + 1, F*2 + P_random*F + Q_random*F);
+  array[F] int re_ind_mu = seq_from_to(1, F);
+  array[F] int re_ind_logsd = seq_from_to(F + 1, F*2);
+  array[re_mu_betas] int re_ind_mu_betas = seq_from_to((F*2) + 1, (F*2) + P_random*F);
+  array[re_logsd_betas] int re_ind_logsd_betas = seq_from_to(F*2 + P_random*F + 1, F*2 + P_random*F + Q_random*F);
   // Pre-extract random design matrices.
   matrix[N, P_random] x_loc_re = x_loc[, P_random_ind];
   matrix[N, Q_random] x_sca_re = x_sca[, Q_random_ind];
@@ -235,8 +235,8 @@ transformed parameters {
     z_to_re_bet_intercepts(mu_logsd_betas_random_z, mu_logsd_betas_random_L, mu_logsd_betas_random_sigma, x_bet_l2, zeta);
   matrix[K, F] mu_random = mu_logsd_betas_random[, re_ind_mu];
   matrix[K, F] logsd_random = mu_logsd_betas_random[, re_ind_logsd];
-  matrix[P_random, F] mu_beta_random[K] = mat_to_mat_array(P_random, F, mu_logsd_betas_random[, re_ind_mu_betas]);
-  matrix[Q_random, F] logsd_beta_random[K] = mat_to_mat_array(Q_random, F, mu_logsd_betas_random[,re_ind_logsd_betas]);
+  array[K] matrix[P_random, F] mu_beta_random = mat_to_mat_array(P_random, F, mu_logsd_betas_random[, re_ind_mu_betas]);
+  array[K] matrix[Q_random, F] logsd_beta_random = mat_to_mat_array(Q_random, F, mu_logsd_betas_random[,re_ind_logsd_betas]);
   matrix[N, F] eta;
   matrix[N, F] eta_logsd;
   // Location Predictions
@@ -275,7 +275,7 @@ transformed parameters {
   // Stochastic realizations
   // if(L2_pred_only || intercept_only) { // Compute t(L_cov) for each k.
   //   {
-  //     matrix[F, F] epsilon_cov_U[K];
+  //     array[K] matrix[F, F] epsilon_cov_U;
   //     for(k in 1:K) {
   // 	epsilon_cov_U[k] = (diag_pre_multiply(exp(eta_logsd[l1_indices[k]]), epsilon_L))';
   //     }
@@ -314,7 +314,7 @@ model {
     //   y[,j] ~ normal_id_glm(eta, nu[j], lambda[,j], sigma[j]);
     // }
     if(L2_pred_only || intercept_only) {
-      matrix[F, F] epsilon_cov_L[K];
+      array[K] matrix[F, F] epsilon_cov_L;
       for(k in 1:K) {
 	epsilon_cov_L[k] = (diag_pre_multiply(exp(eta_logsd[l1_indices[k]]), epsilon_L));
       }
