@@ -1,6 +1,6 @@
 Package: LMMELSM
 Title: Fit Latent Multivariate Mixed Effects Location Scale Models
-Version: 0.2.0
+Version: 0.2.1
 Authors@R: 
     c(person(given = "Stephen",
            family = "Martin",
@@ -17,7 +17,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.1
+RoxygenNote: 7.3.2
 Biarch: true
 BugReports: https://github.com/stephenSRMMartin/LMMELSM
 Depends: 

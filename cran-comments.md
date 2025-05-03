@@ -1,3 +1,6 @@
+* Version bump to 0.2.1
+- This version simply updates to the updated Stan array syntax
+
 * This is another update to the 0.2.0 submission
 - Should actually fix the clang-UBSAN compilation error
 - The error was due to an Eigen bug in arrayed indexing
