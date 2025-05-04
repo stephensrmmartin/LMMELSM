@@ -1,3 +1,7 @@
+* Resubmission v0.2.1:
+- Added .github to the .Rbuildignore file
+- Changed issues url to the suggested url
+
 * Version bump to 0.2.1
 - This version simply updates to the updated Stan array syntax
 
