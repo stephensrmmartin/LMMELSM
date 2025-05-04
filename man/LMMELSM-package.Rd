@@ -14,7 +14,7 @@ Stan Development Team (2020). RStan: the R interface to Stan. R package version 
 \seealso{
 Useful links:
 \itemize{
-  \item Report bugs at \url{https://github.com/stephenSRMMartin/LMMELSM}
+  \item Report bugs at \url{https://github.com/stephenSRMMartin/LMMELSM/issues}
 }
 
 }
